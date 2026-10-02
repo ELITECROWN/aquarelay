@@ -130,16 +130,24 @@ export default function App() {
       // active query once per burst, without cancelling an in-flight fetch.
       refresh();
     };
-    try {
-      stream = new EventSource(`/api/v1/events/stream?after=${cursor}`, {
-        withCredentials: true,
-      });
-      stream.onopen = () => setLive(true);
-      stream.onmessage = onUpdate;
-      stream.addEventListener("update", onUpdate);
-      stream.onerror = () => setLive(false);
-    } catch {
-      setLive(false);
+    const isStaticDeployment = window.location.hostname.includes("vercel.app");
+    if (!isStaticDeployment) {
+      try {
+        stream = new EventSource(`/api/v1/events/stream?after=${cursor}`, {
+          withCredentials: true,
+        });
+        stream.onopen = () => setLive(true);
+        stream.onmessage = onUpdate;
+        stream.addEventListener("update", onUpdate);
+        stream.onerror = () => {
+          setLive(false);
+          try {
+            stream?.close();
+          } catch {}
+        };
+      } catch {
+        setLive(false);
+      }
     }
     const timer = window.setInterval(refresh, 30000);
     return () => {

@@ -1079,7 +1079,6 @@ export function PassportPage() {
 export function LandingPage() {
   const registry = useRegistry(),
     config = useConfig();
-  const featured = registry.data?.items[0];
   return (
     <div className="landing">
       <header className="landing-nav glass-panel highlight-bar">
