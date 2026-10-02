@@ -1,0 +1,5 @@
+[
+  {"external_id":"demo-ngo-101","site_name":"Demo Reedwater Lake","observed_at":"2026-09-29T09:00:00","water_temp":24.5,"ph_level":7.1,"synthetic":true},
+  {"external_id":"demo-ngo-102","site_name":"Demo Reedwater Lake","observed_at":"2026-09-30T09:00:00","water_temp":25.0,"ph_level":7.2,"synthetic":true},
+  {"external_id":"demo-ngo-103","site_name":"Demo Millbank Canal","observed_at":"2026-09-30T10:00:00","water_temp":23.8,"ph_level":7.0,"synthetic":true}
+]

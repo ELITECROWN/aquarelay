@@ -1,0 +1,38 @@
+{
+  "name": "aquarelay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "test:browser:isolated": "playwright test --config playwright.isolated.config.ts"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "1.1.23",
+    "@tanstack/react-query": "5.104.1",
+    "@types/three": "^0.186.0",
+    "lucide-react": "1.50.0",
+    "maplibre-gl": "6.11.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.18.4",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "fake-indexeddb": "^6.2.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "8.3.2",
+    "vitest": "5.0.3"
+  }
+}

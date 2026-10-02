@@ -1,0 +1,101 @@
+{
+  "items": [
+    {
+      "id": "wb-eastmere",
+      "name": "Demo Eastmere Lake",
+      "aliases": [
+        "Eastmere",
+        "Eastmere Lake"
+      ],
+      "type": "lake",
+      "locality": "Eastmere Ward",
+      "latitude": 12.982,
+      "longitude": 77.609,
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.607,
+              12.981
+            ],
+            [
+              77.60799999999999,
+              12.984
+            ],
+            [
+              77.61,
+              12.984
+            ],
+            [
+              77.61149999999999,
+              12.982
+            ],
+            [
+              77.61,
+              12.9805
+            ],
+            [
+              77.607,
+              12.981
+            ]
+          ]
+        ]
+      },
+      "summary": "Synthetic monitoring records link a demonstration field dataset to this lake.",
+      "synthetic": true,
+      "created_at": "2026-01-01T05:30:00+05:30",
+      "case_count": 0,
+      "total_case_count": 0,
+      "source_count": 1,
+      "latest_observed_at": "2026-09-24T11:30:00+05:30",
+      "case_state": "No open cases — condition not assessed",
+      "data_state": "Recorded observations available"
+    },
+    {
+      "id": "wb-lantern",
+      "name": "Demo Lantern Stream",
+      "aliases": [
+        "Lantern",
+        "Lantern Stream"
+      ],
+      "type": "stream",
+      "locality": "Lantern Walk",
+      "latitude": 12.963,
+      "longitude": 77.6,
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.597,
+            12.960999999999999
+          ],
+          [
+            77.59899999999999,
+            12.963
+          ],
+          [
+            77.601,
+            12.963999999999999
+          ],
+          [
+            77.604,
+            12.966
+          ]
+        ]
+      },
+      "summary": "A fictional stream with a documented waterway link. Nearby distance alone does not establish a connection.",
+      "synthetic": true,
+      "created_at": "2026-01-01T05:30:00+05:30",
+      "case_count": 0,
+      "total_case_count": 0,
+      "source_count": 1,
+      "latest_observed_at": null,
+      "case_state": "No open cases — condition not assessed",
+      "data_state": "No measurements recorded"
+    }
+  ],
+  "total": 7,
+  "page": 1,
+  "page_size": 2
+}

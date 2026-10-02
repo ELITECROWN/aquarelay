@@ -1,0 +1,12 @@
+node_modules
+dist
+backend/.venv
+backend/__pycache__
+backend/.pytest_cache
+backend/data
+backend/aquarelay-tests-*
+data
+test-results
+playwright-report
+.git
+.env

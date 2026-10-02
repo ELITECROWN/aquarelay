@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+data/
+test-results/
+playwright-report/
+*.sqlite*
+
+aquarelay-tests-*/
+*.tsbuildinfo
+pytest-cache-files-*/

@@ -1,0 +1,4 @@
+external_id,site_name,observed_at,water_temp,ph_level,synthetic
+demo-ngo-101,Demo Reedwater Lake,2026-09-29T09:00:00,24.5,7.1,true
+demo-ngo-102,Demo Reedwater Lake,2026-09-30T09:00:00,25.0,7.2,true
+demo-ngo-103,Demo Millbank Canal,2026-09-30T10:00:00,23.8,7.0,true

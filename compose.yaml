@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    environment:
+      POSTGRES_DB: aquarelay
+      POSTGRES_USER: aquarelay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-demo-database-password}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquarelay -d aquarelay"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment: &backend-env
+      DATABASE_URL: postgresql+psycopg://aquarelay:${POSTGRES_PASSWORD:-local-demo-database-password}@db:5432/aquarelay
+      DEMO_MODE: ${DEMO_MODE:-true}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8000}
+      STORAGE_PATH: /data/files
+      EMBEDDED_WORKER: "false"
+      HANDOFF_RECIPIENTS_JSON: ${HANDOFF_RECIPIENTS_JSON:-}
+    depends_on:
+      db:
+        condition: service_healthy
+  seed:
+    build: .
+    command: ["python", "-m", "app.seed"]
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  app:
+    build:
+      context: .
+      args:
+        VITE_PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+        VITE_MAP_STYLE_URL: ${MAP_STYLE_URL:-}
+    ports: ["8000:8000"]
+    environment: *backend-env
+    volumes: ["evidence-data:/data/files"]
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+  worker:
+    build: .
+    command: ["python", "-m", "app.worker"]
+    environment: *backend-env
+    volumes: ["evidence-data:/data/files"]
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+volumes:
+  postgres-data:
+  evidence-data:
