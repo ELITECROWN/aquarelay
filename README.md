@@ -1,6 +1,14 @@
 # AquaRelay
 
+> 🌐 **Live Production App (Vercel)**: [https://aquarelay.vercel.app](https://aquarelay.vercel.app)
+
 **Every water body has a history.** A working freshwater registry, public map, incident/evidence workflow, organisation workspace, reviewed data imports, and scoped interoperability demonstration.
+
+## Live Deployment
+
+- **Live URL**: [https://aquarelay.vercel.app](https://aquarelay.vercel.app)
+- **Platform**: Vercel
+- **Branch**: `main`
 
 The workspace began empty. The application uses React 19, TypeScript, Vite 8, Tailwind 4, Lucide, Radix Dialog, TanStack Query and MapLibre 6; a FastAPI/Pydantic/SQLAlchemy modular monolith; PostgreSQL 16/PostGIS in Docker; Alembic migrations; persistent file storage; and a SQL-backed outbox worker. SQLite is an explicitly labelled server-side development/test fallback. Authoritative records never live in frontend arrays or browser local storage.
 

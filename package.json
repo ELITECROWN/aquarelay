@@ -1,6 +1,7 @@
 {
   "name": "aquarelay",
   "version": "1.0.0",
+  "homepage": "https://aquarelay.vercel.app",
   "private": true,
   "type": "module",
   "scripts": {
