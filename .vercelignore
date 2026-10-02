@@ -1,0 +1,10 @@
+node_modules
+.venv
+__pycache__
+dist
+.git
+test-results
+playwright-report
+pytest-cache-files-*
+aquarelay-tests-*
+*.sqlite*
