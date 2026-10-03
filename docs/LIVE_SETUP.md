@@ -114,3 +114,12 @@ Live storage verification on 3 October 2026: Render service aquarelay-api deploy
 
 
 Latest verification (4 October 2026): frontend production build and 19 unit tests passed; backend 108 passed, two disposable-PostgreSQL tests skipped. Case routing preserves acknowledgement state, records assignment provenance and supports an unassigned queue. Administrator social-account review and revocation support explicit optional handle selection. These controls require a real administrator and documented organisations; no authority profiles were fabricated. Map API returns the complete registry independently of the 50-record list page. Earlier dated verification sections describe historical milestones.
+
+
+Registry expansion verified on 4 October 2026: Sodepur–Barrackpore (West Bengal)
+1,474 starter features; Potheri (Tamil Nadu) 12 starter features; Bengaluru 868.
+The live total is 2,354 and the lean map endpoint returns them all. Search the
+region name or known mapped name. Potheri Lake is a provisional desk identity
+with independently attributed reference documents, awaiting local confirmation.
+Snapshots are community mapping, not complete official registries. Many names
+are absent. The website tab now uses its existing amber wave logo.

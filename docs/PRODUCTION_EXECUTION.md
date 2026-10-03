@@ -41,3 +41,20 @@ Production launch succeeded with python -m app.launch: migrations and PostGIS re
 Complete-map API, demo-notification isolation, administrator unassigned-case routing with source provenance, organisation profile approval/revocation and explicit optional sharing handles are implemented. Existing presentation is retained. Verification: 108 backend tests passed, two PostgreSQL-specific tests skipped; 19 frontend tests and production build passed. Four targeted map/presentation browser scenarios reported passing; Windows server teardown needed interruption.
 
 Still required: first administrator email and password entered directly in Render; real organisation/manager setup; documented profiles/partner endpoints; optional browser push credentials; separate-database concurrency and backup/restore checks. Email remains intentionally unconfigured at the user request.
+
+
+## Regional registry and browser-tab logo — 4 October 2026
+
+Deployed commit 71dd79a. Imported 1,474 explicitly classified OSM starter
+features in the east-bank Sodepur–Barrackpore coverage box and 12 in Potheri.
+Live map response verified: 2,354 total, 2,354 returned, truncated=false.
+Public searches and the actual live Potheri map were verified. The Potheri
+Lake passport retains a provisional identity warning and three independent
+source records; no incident or authority assignment was invented. See
+backend/registry/README.md for source timestamps, geographic scope and exclusions.
+The one-time REGISTRY_STARTER_PATHS setting was cleared after import.
+
+Chrome-compatible SVG favicon uses the existing amber wave mark; deployed HTML
+links it and the live asset responds 200 with image/svg+xml. Page layout and
+styles are retained. Validation: 113 backend tests passed, two PostgreSQL tests
+skipped; 19 frontend tests and production build passed.
