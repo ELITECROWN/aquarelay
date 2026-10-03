@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Waves,
   X,
+  ArrowRight,
 } from "lucide-react";
 import { useSession } from "../session";
 
@@ -86,10 +87,10 @@ export default function SideMenuDrawer(props?: {
             onClick={handleClose}
             title="Close menu"
           >
-            <span className="brand-mark">
-              <Waves size={25} />
+            <span className="brand-mark pureflow-mark">
+              <Waves size={22} />
             </span>
-            AquaRelay<span className="brand-period">.</span>
+            <span className="pureflow-drawer-title">AquaRelay<span className="brand-period">.</span></span>
           </div>
           <button
             type="button"
@@ -97,12 +98,24 @@ export default function SideMenuDrawer(props?: {
             aria-label="Close navigation menu"
             onClick={handleClose}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Navigation List: Identical to Sidebar */}
-        <nav aria-label="Main navigation">
+        {/* Featured Impact Card from PureFlow Theme */}
+        <div className="drawer-feature-card">
+          <span className="feature-eyebrow">
+            <span className="feature-amber-dot" /> OUR MISSION
+          </span>
+          <h4>Building Systems That Last for Generations.</h4>
+          <p>Access to safe water is the foundation for healthy, thriving communities.</p>
+          <Link to="/explore" onClick={handleClose} className="drawer-feature-link">
+            Explore Catchments <ArrowRight size={13} />
+          </Link>
+        </div>
+
+        {/* Navigation List: PureFlow Pill Style */}
+        <nav className="pureflow-drawer-nav" aria-label="Main navigation">
           {MENU_OPTIONS.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.to;
@@ -110,18 +123,18 @@ export default function SideMenuDrawer(props?: {
               <Link
                 key={item.to}
                 to={item.to}
-                className={isActive ? "active" : ""}
+                className={`drawer-nav-item ${isActive ? "active" : ""}`}
                 onClick={handleClose}
               >
                 <Icon size={18} />
                 <span>{item.title}</span>
-                {item.to === "/report" && <span className="nav-plus">+</span>}
+                {item.to === "/report" && <span className="drawer-plus-badge">+ Report</span>}
               </Link>
             );
           })}
         </nav>
 
-        <div className="sidebar-bottom">
+        <div className="sidebar-bottom drawer-footer-pureflow">
           <Link
             className="help-link"
             to="/settings"
@@ -132,10 +145,10 @@ export default function SideMenuDrawer(props?: {
           </Link>
           <Link
             to={user ? "/settings" : "/login"}
-            className="account"
+            className="account drawer-account"
             onClick={handleClose}
           >
-            <span className="avatar">{user ? user.name.charAt(0) : "G"}</span>
+            <span className="avatar amber-avatar">{user ? user.name.charAt(0) : "G"}</span>
             <span>
               <strong>{user?.name || "Public visitor"}</strong>
               <small>

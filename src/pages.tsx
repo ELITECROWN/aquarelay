@@ -44,6 +44,10 @@ import {
   Plug,
   ShieldAlert,
   Zap,
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  Sparkles,
 } from "lucide-react";
 import { api } from "./api";
 import { useSession } from "./session";
@@ -115,6 +119,7 @@ import { workflowLabel } from "./labels";
 import ShareModal from "./features/ShareModal";
 import LakeDeliveryBar from "./components/LakeDeliveryBar";
 import RiverCleanCinemaSection from "./components/RiverCleanCinemaSection";
+import PureFlowHeroVideo from "./components/PureFlowHeroVideo";
 import { openSideMenuDrawer } from "./components/SideMenuDrawer";
 
 function useRegistry(query = "") {
@@ -1079,216 +1084,316 @@ export function PassportPage() {
 export function LandingPage() {
   const registry = useRegistry(),
     config = useConfig();
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [donationFrequency, setDonationFrequency] = useState<"once" | "monthly">("monthly");
+  const [donationAmount, setDonationAmount] = useState<number>(50);
+
+  const faqs = [
+    {
+      q: "How Does Citizen Reporting Provide Clean Water?",
+      a: "Every report you contribute feeds directly into GPS-verified forensics, alerting State Pollution Control Boards and deploying rapid cleanup boats with legally documented response SLAs."
+    },
+    {
+      q: "How Do You Ensure The Water Stays Flowing Long-Term?",
+      a: "Access to water is more than a basic need; it's the foundation for health, education, and economic growth. We design projects with community ownership at the core, ensuring every sensor system is maintained, protected, and sustained for years to come."
+    },
+    {
+      q: "Where Does Your Organization Work?",
+      a: "AquaRelay operates across key freshwater basins, urban catchment lakes, and rural irrigation networks, coordinating active cleanup machinery and eco-patrol squads across vulnerable waterways."
+    },
+    {
+      q: "Can I Choose Which Catchment Project Needs Immediate Action?",
+      a: "Yes. Through the Explore Water Map, you can review live cleanliness scores, dissolved oxygen levels, and active contamination cases to direct watchdog attention where it is needed most."
+    },
+    {
+      q: "How Do Automated Cleanup Machines Save Our Waters?",
+      a: "Floating solar-powered trash barriers, micro-bubble oxygenators, and autonomous skimmer boats physically extract floating debris and restore biological oxygen levels before contaminants spread downstream."
+    }
+  ];
+
   return (
-    <div className="landing">
-      <header className="landing-nav glass-panel highlight-bar">
-        <div
-          className="brand logo-clickable"
-          onClick={openSideMenuDrawer}
-          title="Click logo to slide out services list"
-        >
-          <span className="brand-mark">
-            <Waves size={25} />
-          </span>
-          AquaRelay<span className="brand-period">.</span>
-        </div>
+    <div className="pureflow-page-root">
+      {/* 1. Hero with 3D Video Background & Capsule Header */}
+      <PureFlowHeroVideo />
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto" }}>
-          <Link
-            to="/notifications"
-            className="icon-button topbar-bell-btn"
-            aria-label="Open updates and notifications"
-            title="Updates & Notifications"
-            style={{
-              position: "relative",
-              minWidth: "38px",
-              minHeight: "38px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "8px",
-              border: "1px solid #fecaca",
-              background: "#ffffff",
-              color: "#1f2937",
-            }}
-          >
-            <Bell size={18} />
-            <span
-              style={{
-                position: "absolute",
-                top: "7px",
-                right: "7px",
-                width: "7px",
-                height: "7px",
-                backgroundColor: "#ef4444",
-                borderRadius: "50%",
-                boxShadow: "0 0 6px #ef4444",
-              }}
-            />
-          </Link>
-          <Link
-            className="button primary"
-            to="/report"
-            style={{
-              minHeight: "38px",
-              padding: "8px 16px",
-              fontSize: "12px",
-              background: "#ef4444",
-              borderColor: "#dc2626",
-              color: "#ffffff",
-            }}
-          >
-            <Plus size={15} /> Report Lake Anomaly
-          </Link>
-          <Link
-            className="button secondary"
-            to="/login"
-            style={{
-              minHeight: "38px",
-              padding: "8px 14px",
-              fontSize: "12px",
-              background: "#ffffff",
-              borderColor: "#e5e7eb",
-              color: "#1f2937",
-            }}
-          >
-            Sign in
-            <ArrowUpRight size={15} />
-          </Link>
-        </div>
-      </header>
-
-      <main>
-        <section className="hero hero-centered">
-          <div className="hero-copy-clean">
-            <h1 className="hero-thin-animated-title">
-              Protect your lakes<span>.</span>
-              <br />
-              Report suspicious activity<span>.</span>
-            </h1>
-            <p className="hero-punchy-tagline">
-              Real-Time Lake Watchdog
-            </p>
-            <div className="button-row hero-buttons-center">
-              <Link
-                className="button primary"
-                to="/report"
-                style={{ fontSize: "14px", padding: "12px 24px", background: "#ef4444", borderColor: "#dc2626", color: "#ffffff" }}
-              >
-                Report suspicious activity <Plus size={18} />
-              </Link>
-              <Link
-                className="button secondary"
-                to="/dispatch-tracker"
-                style={{ fontSize: "14px", padding: "12px 22px", background: "#ffffff", borderColor: "#e5e7eb", color: "#1f2937" }}
-              >
-                Track <Zap size={16} style={{ color: "#ef4444" }} />
-              </Link>
-              <Link
-                className="button secondary"
-                to="/explore"
-                style={{ fontSize: "14px", padding: "12px 22px", background: "#ffffff", borderColor: "#e5e7eb", color: "#1f2937" }}
-              >
-                Explore water map <ArrowRight size={17} style={{ color: "#ef4444" }} />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Transparent Slim Delivery Tracking Bar */}
+      {/* 2. Amazon-Style Live Delivery Tracking Bar */}
+      <div className="pureflow-tracker-strip">
         <LakeDeliveryBar />
+      </div>
 
-        {/* River Clean Cinematic Scroll Section (Half Screen <-> Big Screen Theater) */}
-        <RiverCleanCinemaSection />
-
-        <section className="landing-story">
-          <div>
-            <p className="eyebrow" style={{ color: "#ef4444", fontWeight: 700 }}>CITIZEN-TO-AUTHORITY LIFECYCLE</p>
-            <h2>
-              From citizen alert
-              <br />
-              to official intervention.
-            </h2>
-            <p>
-              Bridging the gap between the observer beside the water and the regulatory bodies empowered to protect it.
-            </p>
-          </div>
-          <div className="steps">
-            {[
-              {
-                icon: ShieldAlert,
-                color: "#ef4444",
-                title: "Report Suspicious Anomaly.",
-                text: "Witnessed oily slicks, chemical foaming, or sudden wildlife distress? Submit GPS-verified photos and descriptions in seconds.",
-              },
-              {
-                icon: Zap,
-                color: "#dc2626",
-                title: "Rapid Verification & Triage.",
-                text: "Telemetry cross-references citizen reports, historical water records, and sensory indicators to calculate response priority.",
-              },
-              {
-                icon: Database,
-                color: "#b91c1c",
-                title: "Automated Authority Dispatch.",
-                text: "Instantly routes signed incident notices to State Pollution Control Boards and Municipal Water Bureaus with documented SLAs.",
-              },
-            ].map((s, i) => (
-              <article key={s.title} className="glass-panel" style={{ padding: "20px" }}>
-                <span className="step-index" style={{ color: s.color, fontWeight: "700" }}>0{i + 1}</span>
-                <s.icon size={22} style={{ color: s.color, margin: "10px 0" }} />
-                <div>
-                  <h3>{s.title}</h3>
-                  <p>{s.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-        {config.data?.demo_mode && (
-          <section className="landing-timeline glass-panel">
-            <div>
-              <Badge>VERIFIED AUTHORITY TIMELINE</Badge>
-              <h2>Follow a documented response.</h2>
-              <p>
-                The synthetic Reedwater case connects a community observation to
-                a recorded cleanup and an authority follow-up report.
+      {/* 3. PureFlow "About Us" Section matching the uploaded design */}
+      <section className="pureflow-about-section">
+        <div className="pureflow-container">
+          <div className="pureflow-about-grid">
+            <div className="about-left">
+              <span className="pureflow-section-tag">
+                <span className="pureflow-dot-amber" /> ABOUT US
+              </span>
+              <h2 className="pureflow-heading-huge">
+                Together, We<br />
+                Restore Access<br />
+                to Clean Water.
+              </h2>
+            </div>
+            <div className="about-right">
+              <p className="about-lead-text">
+                Every community deserves reliable, safe water. At AquaRelay, we transform unsafe sources into sustainable systems through smart engineering, citizen reporting, and rapid cleanup partnerships. By combining innovation with community vigilance, we create long-term solutions that empower families.
               </p>
-              <Link className="text-link" to="/waterbodies/wb-reedwater">
-                Explore the complete incident history <ArrowRight size={16} />
+              <Link to="/explore" className="pureflow-pill-btn">
+                Our Mission <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="demo-timeline">
-              <div>
-                <i style={{ background: "#ef4444" }} />
-                <span>
-                  Observation recorded
-                  <small>Community citizen alert · GPS verified</small>
-                </span>
+          </div>
+
+          {/* Numbers / Impact Stats Row (from the image) */}
+          <div className="pureflow-stats-row">
+            <div className="pureflow-stat-card">
+              <span className="stat-number">50<sup>+</sup></span>
+              <span className="stat-label">Protected Catchments</span>
+            </div>
+            <div className="pureflow-stat-card">
+              <span className="stat-number">1.2M<sup>+</sup></span>
+              <span className="stat-label">Citizens Vigilant</span>
+            </div>
+            <div className="pureflow-stat-card">
+              <span className="stat-number">150K<sup>+</sup></span>
+              <span className="stat-label">Forensic Readings Logged</span>
+            </div>
+            <div className="pureflow-stat-card">
+              <span className="stat-number">98%</span>
+              <span className="stat-label">Restoration SLA Rate</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Golden Yellow Impact & Initiative Cards (matching top-right of image) */}
+      <section className="pureflow-yellow-section">
+        <div className="pureflow-container">
+          <div className="yellow-section-header">
+            <div>
+              <span className="feature-amber-pill">
+                <Sparkles size={13} /> ACTIVE WATER INITIATIVES
+              </span>
+              <h3 className="yellow-title">Make a Meaningful Impact Today</h3>
+            </div>
+            <p className="yellow-sub">
+              Transparent telemetry. Real impact. Every contribution and citizen observation moves a community forward.
+            </p>
+          </div>
+
+          <div className="pureflow-yellow-grid">
+            <div className="pureflow-yellow-card highlight-bar">
+              <div className="card-top">
+                <span className="card-badge">EDUCATIONAL INITIATIVE</span>
+                <h4>Water Education & Watchdog Initiative</h4>
+                <p>Teach hygiene, sampling procedures, and safe observation practices in rural and urban catchment communities.</p>
               </div>
-              <div>
-                <i style={{ background: "#facc15" }} />
-                <span>
-                  Authority dispatched
-                  <small>State Pollution Control Board · Automated routing</small>
-                </span>
+              <div className="card-progress">
+                <div className="progress-labels">
+                  <span>Active Watchdogs: <strong>$98,090</strong></span>
+                  <span>Goal: <strong>$260,000</strong></span>
+                </div>
+                <div className="progress-track">
+                  <div className="progress-fill" style={{ width: "68%" }} />
+                </div>
               </div>
-              <div>
-                <i style={{ background: "#10b981" }} />
-                <span>
-                  Remediation & closure
-                  <small>Inspection completed · Water telemetry updated</small>
-                </span>
+              <Link to="/explore" className="yellow-btn-dark">
+                View Program <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <div className="pureflow-yellow-card highlight-bar">
+              <div className="card-top">
+                <span className="card-badge">ECO-PATROL FLEET</span>
+                <h4>Health & Sanitation Machine Drive</h4>
+                <p>Deploy rapid eco-patrol machinery and floating solar barriers to prevent industrial sludge contamination.</p>
+              </div>
+              <div className="card-progress">
+                <div className="progress-labels">
+                  <span>Machines Deployed: <strong>$75,980</strong></span>
+                  <span>Goal: <strong>$120,000</strong></span>
+                </div>
+                <div className="progress-track">
+                  <div className="progress-fill" style={{ width: "82%" }} />
+                </div>
+              </div>
+              <Link to="/report" className="yellow-btn-dark">
+                View Program <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. River Clean Cinema (High-Impact Cleanup Machines Theater) */}
+      <RiverCleanCinemaSection />
+
+      {/* 6. PureFlow Impact & Accordion FAQ (matching right-middle of image) */}
+      <section className="pureflow-impact-faq-section">
+        <div className="pureflow-container">
+          <div className="impact-faq-grid">
+            <div className="impact-left-card">
+              <span className="pureflow-section-tag">
+                <span className="pureflow-dot-amber" /> OUR IMPACT
+              </span>
+              <h2 className="pureflow-heading-mid">
+                Building Systems That Last for Generations.
+              </h2>
+              <p>
+                Access to water is more than a basic need; it's the foundation for health, education, and economic growth. We design projects with community ownership at the core, ensuring every system is maintained, protected, and sustained for years to come.
+              </p>
+              <Link to="/explore" className="pureflow-pill-btn">
+                See Our Impact <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <div className="faq-right-column">
+              <div className="pureflow-accordion">
+                {faqs.map((faq, idx) => {
+                  const isOpen = openFaq === idx;
+                  return (
+                    <div
+                      key={faq.q}
+                      className={`accordion-item ${isOpen ? "open" : ""}`}
+                    >
+                      <button
+                        type="button"
+                        className="accordion-header"
+                        onClick={() => setOpenFaq(isOpen ? null : idx)}
+                        aria-expanded={isOpen}
+                      >
+                        <span>{faq.q}</span>
+                        {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                      {isOpen && (
+                        <div className="accordion-body">
+                          <p>{faq.a}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </section>
-        )}
-      </main>
-      <footer className="landing-footer">
-        <span>AquaRelay · Every water body has a history.</span>
-        <Link to="/explore">
-          Explore lake registry <ArrowUpRight size={14} />
-        </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Community Giving & Report CTA Card (matching bottom-right of image) */}
+      <section className="pureflow-action-section">
+        <div className="pureflow-container">
+          <div className="action-card-grid">
+            <div className="action-form-side">
+              <span className="pureflow-section-tag">
+                <span className="pureflow-dot-amber" /> TAKE ACTION
+              </span>
+              <h3>Stand Up for Living Waters.</h3>
+              <p>Join thousands of active citizens safeguarding catchments and protecting communities.</p>
+
+              <div className="donation-tabs">
+                <button
+                  type="button"
+                  className={`tab-btn ${donationFrequency === "once" ? "active" : ""}`}
+                  onClick={() => setDonationFrequency("once")}
+                >
+                  Give Once
+                </button>
+                <button
+                  type="button"
+                  className={`tab-btn ${donationFrequency === "monthly" ? "active" : ""}`}
+                  onClick={() => setDonationFrequency("monthly")}
+                >
+                  Monthly
+                </button>
+              </div>
+
+              <div className="amount-pills">
+                {[25, 50, 100, 250].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    className={`amount-pill ${donationAmount === amt ? "active" : ""}`}
+                    onClick={() => setDonationAmount(amt)}
+                  >
+                    ${amt} <small>USD/{donationFrequency === "monthly" ? "mo" : "once"}</small>
+                  </button>
+                ))}
+              </div>
+
+              <div className="action-submit-row">
+                <Link to="/report" className="pureflow-btn-amber full-width">
+                  Report Lake Incident Today <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="action-image-side">
+              <div className="pureflow-water-tap-card">
+                <div className="tap-badge">
+                  <Heart size={14} className="text-amber-500 fill-amber-500" />
+                  <span>COMMUNITY MONITORED SAFE TAP</span>
+                </div>
+                <h4>Pure Water for Every Child</h4>
+                <p>Real-time forensics ensure zero industrial runoff reaches municipal wells.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. PureFlow Sleek Dark Editorial Footer (matching bottom of image) */}
+      <footer className="pureflow-footer">
+        <div className="pureflow-container">
+          <div className="pureflow-footer-top">
+            <div className="footer-col-brand">
+              <div className="footer-logo">
+                <Waves size={24} className="footer-wave-icon" />
+                <span>AquaRelay<small>.</small></span>
+              </div>
+              <p>
+                Transforming compromised freshwater sources into living, protected ecosystems through citizen vigilance and rapid intervention.
+              </p>
+            </div>
+
+            <div className="footer-col">
+              <h5>Quick Links</h5>
+              <ul>
+                <li><Link to="/report">Report Anomaly</Link></li>
+                <li><Link to="/explore">Explore Water Map</Link></li>
+                <li><Link to="/dispatch-tracker">Track Dispatches</Link></li>
+                <li><Link to="/organisations">Organisations</Link></li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h5>Programs</h5>
+              <ul>
+                <li><Link to="/explore">Catchment Sensors</Link></li>
+                <li><Link to="/explore">Eco-Patrol Boats</Link></li>
+                <li><Link to="/notifications">Citizen Forensics</Link></li>
+                <li><Link to="/settings">Community Registry</Link></li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h5>Legal & Policy</h5>
+              <ul>
+                <li><Link to="/developers">Open Data API</Link></li>
+                <li><Link to="/settings">Privacy Policy</Link></li>
+                <li><Link to="/settings">Terms of Service</Link></li>
+                <li><Link to="/notifications">Authority Dispatch SLAs</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pureflow-footer-bottom">
+            <span>© 2026 AquaRelay PureFlow Initiative. All rights reserved.</span>
+            <div className="footer-social-links">
+              <span>Living Waters</span> · <span>GPS Verified</span> · <span>Automated SLAs</span>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -15,3 +15,5 @@ aquarelay-tests-*/
 pytest-cache-files-*/
 
 .vercel
+*.mp4
+
