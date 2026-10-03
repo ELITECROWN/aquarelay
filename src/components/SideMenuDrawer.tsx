@@ -25,11 +25,14 @@ export function openSideMenuDrawer() {
 
 const MENU_OPTIONS = [
   { to: "/", title: "Home", icon: Home },
-  { to: "/dispatch-tracker", title: "Track Dispatches", icon: Truck },
+  { to: "/following", title: "Following", icon: Truck },
+  { to: "/integrations", title: "Integrations", icon: Building2 },
+  { to: "/developers", title: "Public API", icon: Leaf },
   { to: "/explore", title: "Explore Waters", icon: Compass },
   { to: "/report", title: "Report Observation", icon: Plus, badge: "+ Report" },
   { to: "/notifications", title: "Updates & Alerts", icon: Bell },
   { to: "/workspace", title: "Case Workspace", icon: Building2 },
+  { to: "/registry", title: "Registry & Field Records", icon: Building2 },
   { to: "/organisations", title: "Organisations", icon: Leaf },
 ];
 
@@ -83,6 +86,8 @@ export default function SideMenuDrawer(props?: {
       <aside
         className={`side-menu-drawer pureflow-wide-drawer ${isOpen ? "drawer-open" : ""}`}
         aria-label="AquaRelay Navigation"
+        aria-hidden={!isOpen}
+        inert={!isOpen}
       >
         {/* Drawer Header with Logo & Close button */}
         <div className="drawer-header">

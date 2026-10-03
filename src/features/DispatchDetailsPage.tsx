@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -18,56 +18,19 @@ import {
   ExternalLink,
 } from "lucide-react";
 
+import { useRecord, Loading, Notice, label, date } from "./workflowShared";
+import type { CaseRecord, RecordedEvent } from "../types";
 export default function DispatchDetailsPage() {
-  const [activeStepIndex, setActiveStepIndex] = useState(2); // Step 3: Out for delivery
-
-  const trackingSteps = [
-    {
-      title: "Reported",
-      status: "completed",
-      date: "Today, 10:24 PM",
-      desc: "Citizen alert confirmed at Bellandur Lake with GPS photos.",
-    },
-    {
-      title: "Dispatched",
-      status: "completed",
-      date: "Today, 10:25 PM",
-      desc: "Dispatched from Central Command to Special Enforcement Division.",
-    },
-    {
-      title: "Out for delivery",
-      status: "current",
-      date: "Today, 10:26 PM",
-      desc: "Patrol boat is on the way to the lake catchment coordinates.",
-    },
-    {
-      title: "Arriving at lake",
-      status: "pending",
-      date: "Today",
-      desc: "On-site forensic water sampling and chemical neutralization.",
-    },
-  ];
-
-  const trackingHistory = [
-    {
-      time: "Today, 10:26 PM",
-      event: "Out for delivery",
-      location: "Bengaluru Central Station",
-      detail: "Inspector Ananya Sen & Team in Eco-Patrol Boat #04 are en route to target coordinates.",
-    },
-    {
-      time: "Today, 10:25 PM",
-      event: "Incident Dispatched",
-      location: "State Pollution Control Board",
-      detail: "Level 4 priority cryptographic protocol signed and assigned to Enforcement Wing.",
-    },
-    {
-      time: "Today, 10:24 PM",
-      event: "Incident Report Received",
-      location: "AquaRelay Cloud Telemetry",
-      detail: "Verified citizen alert at 12.9352° N, 77.6710° E with evidence photos.",
-    },
-  ];
+  const [params]=useSearchParams();
+  const records=useRecord<{items:CaseRecord[]}>("/cases");
+  const selected=records.data?.items.find(c=>c.id===params.get("case")) || records.data?.items[0];
+  const detail=useRecord<{events:RecordedEvent[];reports:unknown[];evidence:unknown[];actions:unknown[]}>(`/cases/${selected?.id}`,!!selected);
+  const activeStepIndex=selected?.state==="closed"?3:selected?.state==="action_in_progress"?2:selected?.state==="investigating"?1:0;
+  const trackingSteps=["Reported","Investigation","Action","Resolution"].map((title,idx)=>({title,date:idx===0?date(selected?.created_at):idx===activeStepIndex?label(selected?.state):"Recorded workflow"}));
+  const trackingHistory=(detail.data?.events||[]).map(e=>({time:date(e.created_at),event:e.title,location:selected?.waterbody_name||"",detail:e.description}));
+  if(records.loading)return <div className="wf-page amazon-tracker-page"><Loading/></div>;
+  if(records.error)return <div className="wf-page amazon-tracker-page"><Notice error>{records.error}</Notice></div>;
+  if(!selected)return <div className="wf-page amazon-tracker-page"><Notice>No incidents have been recorded.</Notice><Link to="/explore">Explore water bodies</Link></div>;
 
   return (
     <div className="wf-page amazon-tracker-page" style={{ maxWidth: "980px", margin: "0 auto", padding: "40px 20px" }}>
@@ -94,7 +57,7 @@ export default function DispatchDetailsPage() {
         </Link>
 
         <span style={{ fontSize: "13px", color: "#64748b" }}>
-          Tracking ID: <strong style={{ color: "#1e293b", fontFamily: "monospace" }}>#AUTH-LK-8942-CPCB</strong>
+          Tracking ID: <strong style={{ color: "#1e293b", fontFamily: "monospace" }}>{selected.id}</strong>
         </span>
       </div>
 
@@ -116,13 +79,13 @@ export default function DispatchDetailsPage() {
         <div style={{ marginBottom: "28px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#059669", fontSize: "13px", fontWeight: "750", marginBottom: "4px" }}>
             <Truck size={17} />
-            <span>Out for delivery</span>
+            <span>{label(selected.state)}</span>
           </div>
           <h1 style={{ fontSize: "36px", fontWeight: "800", color: "#065f46", margin: "0 0 6px", letterSpacing: "-1px" }}>
-            Arriving Today
+            Incident response records
           </h1>
           <p style={{ color: "#475569", fontSize: "14px", margin: 0 }}>
-            Your emergency lake enforcement unit is on the way to <strong>Bellandur Catchment (North Inflow Drain)</strong>.
+            Recorded progress for <strong>{selected.waterbody_name}</strong>{selected.synthetic?" · Synthetic demonstration":""}.
           </p>
         </div>
 
@@ -152,7 +115,7 @@ export default function DispatchDetailsPage() {
               <div
                 style={{
                   height: "100%",
-                  width: "66%",
+                  width: `${activeStepIndex / 3 * 100}%`,
                   background: "#059669",
                   borderRadius: "9999px",
                   transition: "width 0.4s ease",
@@ -232,34 +195,27 @@ export default function DispatchDetailsPage() {
               TARGET LAKE LOCATION
             </span>
             <strong style={{ fontSize: "14px", color: "#1e293b", display: "block" }}>
-              Bellandur Catchment North Drain
+              {selected.waterbody_name}
             </strong>
             <span style={{ fontSize: "12px", color: "#64748b" }}>
-              12.9352° N, 77.6710° E · Bengaluru Urban
+              {selected.title}
             </span>
           </div>
 
           <div>
             <span style={{ fontSize: "11px", fontWeight: "750", letterSpacing: "0.8px", color: "#8c6e75", display: "block", marginBottom: "4px" }}>
-              ASSIGNED DISPATCH CARRIER
+              RESPONSIBLE ORGANISATION
             </span>
             <strong style={{ fontSize: "14px", color: "#1e293b", display: "block" }}>
-              Special Lake Enforcement Division
+              {selected.organisation_id || "Not assigned"}
             </strong>
             <span style={{ fontSize: "12px", color: "#64748b" }}>
-              Officer: Insp. Ananya Sen · Patrol Boat #04
+              Delivery status: {label(selected.delivery_state)}
             </span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center" }}>
-            <button
-              type="button"
-              className="button secondary"
-              style={{ width: "100%", minHeight: "38px", fontSize: "12px", gap: "6px" }}
-              onClick={() => alert("Connecting to Official Lake Enforcement Desk\nHotline: 1800-LAKE-PROTECT")}
-            >
-              <Phone size={14} /> Contact Response Desk
-            </button>
+            <Link to="/organisations" className="button secondary" style={{ width:"100%", minHeight:"38px", fontSize:"12px", gap:"6px" }}><Phone size={14}/> Organisation directory</Link>
           </div>
         </div>
 
@@ -309,7 +265,7 @@ export default function DispatchDetailsPage() {
 
         {/* Live Water Telemetry Snapshot */}
         <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#1e293b", marginBottom: "16px" }}>
-          Water Contamination Readings for Incident #AUTH-LK-8942-CPCB
+          Recorded Evidence for Incident {selected.id}
         </h2>
         <div
           style={{
@@ -321,37 +277,39 @@ export default function DispatchDetailsPage() {
         >
           <div style={{ padding: "14px 16px", borderRadius: "14px", background: "#ffffff", border: "1px solid #f1f5f9" }}>
             <span style={{ fontSize: "10px", fontWeight: "750", color: "#0284c7", display: "flex", alignItems: "center", gap: "5px" }}>
-              <Droplet size={13} /> DISSOLVED OXYGEN
+              <Droplet size={13} /> COMMUNITY REPORTS
             </span>
-            <strong style={{ fontSize: "20px", color: "#dc2626", display: "block", margin: "4px 0" }}>1.4 mg/L</strong>
-            <small style={{ color: "#dc2626", fontWeight: "600" }}>Critical Hypoxia</small>
+            <strong style={{ fontSize: "20px", color: "#dc2626", display: "block", margin: "4px 0" }}>{detail.data?.reports.length ?? "—"}</strong>
+            <small style={{ color: "#dc2626", fontWeight: "600" }}>Submitted observations</small>
           </div>
 
           <div style={{ padding: "14px 16px", borderRadius: "14px", background: "#ffffff", border: "1px solid #f1f5f9" }}>
             <span style={{ fontSize: "10px", fontWeight: "750", color: "#7c3aed", display: "flex", alignItems: "center", gap: "5px" }}>
-              <Flame size={13} /> pH LEVEL
+              <Flame size={13} /> PUBLIC EVIDENCE
             </span>
-            <strong style={{ fontSize: "20px", color: "#7c3aed", display: "block", margin: "4px 0" }}>9.8 pH</strong>
-            <small style={{ color: "#7c3aed", fontWeight: "600" }}>Alkaline Effluent</small>
+            <strong style={{ fontSize: "20px", color: "#7c3aed", display: "block", margin: "4px 0" }}>{detail.data?.evidence.length ?? "—"}</strong>
+            <small style={{ color: "#7c3aed", fontWeight: "600" }}>Supporting media</small>
           </div>
 
           <div style={{ padding: "14px 16px", borderRadius: "14px", background: "#ffffff", border: "1px solid #f1f5f9" }}>
             <span style={{ fontSize: "10px", fontWeight: "750", color: "#d97706", display: "flex", alignItems: "center", gap: "5px" }}>
-              <Zap size={13} /> TURBIDITY
+              <Zap size={13} /> ACTION RECORDS
             </span>
-            <strong style={{ fontSize: "20px", color: "#d97706", display: "block", margin: "4px 0" }}>84 NTU</strong>
-            <small style={{ color: "#d97706", fontWeight: "600" }}>Toxic Foam</small>
+            <strong style={{ fontSize: "20px", color: "#d97706", display: "block", margin: "4px 0" }}>{detail.data?.actions.length ?? "—"}</strong>
+            <small style={{ color: "#d97706", fontWeight: "600" }}>Documented actions</small>
           </div>
 
           <div style={{ padding: "14px 16px", borderRadius: "14px", background: "#ffffff", border: "1px solid #f1f5f9" }}>
             <span style={{ fontSize: "10px", fontWeight: "750", color: "#059669", display: "flex", alignItems: "center", gap: "5px" }}>
-              <ShieldAlert size={13} /> REGULATORY SLA
+              <ShieldAlert size={13} /> WORKFLOW STATUS
             </span>
-            <strong style={{ fontSize: "20px", color: "#059669", display: "block", margin: "4px 0" }}>Today</strong>
-            <small style={{ color: "#059669", fontWeight: "600" }}>Emergency Action</small>
+            <strong style={{ fontSize: "20px", color: "#059669", display: "block", margin: "4px 0" }}>{label(selected.state)}</strong>
+            <small style={{ color: "#059669", fontWeight: "600" }}>Not a water-safety assessment</small>
           </div>
         </div>
 
+        {detail.error && <Notice error>{detail.error}</Notice>}
+        <div className="record-list">{records.data?.items.map(c=><Link key={c.id} to={`/dispatch-tracker?case=${encodeURIComponent(c.id)}`}>{c.title} · {label(c.state)}</Link>)}</div>
         {/* Action Buttons */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", paddingTop: "20px", borderTop: "1px solid #f1f5f9" }}>
           <Link to="/report" className="button primary" style={{ fontSize: "13px", padding: "10px 20px" }}>

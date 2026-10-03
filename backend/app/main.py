@@ -13,6 +13,8 @@ from . import models
 from .auth import router as auth_router,validate_csrf
 from .core import router as core_router,DEMO_MODE
 from .assistance import router as assistance_router
+from .workspace import router as workspace_router
+from .push import router as push_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -43,7 +45,7 @@ async def security_middleware(request:Request,call_next):
     while window and window[0]<now-60: window.popleft()
     if len(window)>=240: return JSONResponse({"detail":"Request limit reached. Retry shortly."},status_code=429,headers={"Retry-After":"60"})
     window.append(now)
-    if request.method=="POST" and request.url.path in {"/api/v1/auth/login","/api/v1/auth/register"}:
+    if request.method=="POST" and request.url.path.startswith('/api/v1/auth/'):
         auth_window=auth_traffic[client]
         while auth_window and auth_window[0]<now-60: auth_window.popleft()
         if len(auth_window)>=15: return JSONResponse({"detail":"Sign-in attempt limit reached. Retry in one minute."},status_code=429)
@@ -64,6 +66,8 @@ async def security_middleware(request:Request,call_next):
 app.include_router(auth_router,prefix="/api/v1",tags=["authentication"])
 app.include_router(core_router,prefix="/api/v1",tags=["registry and workflow"])
 app.include_router(assistance_router,prefix="/api/v1",tags=["non-authoritative drafts"])
+app.include_router(workspace_router,prefix="/api/v1",tags=["professional contributions"])
+app.include_router(push_router,prefix='/api/v1',tags=['browser notifications'])
 try:
     from .integrations import router as integrations_router
     app.include_router(integrations_router,prefix="/api/v1",tags=["interoperability"])

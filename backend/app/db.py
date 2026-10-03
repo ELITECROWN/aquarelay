@@ -10,6 +10,10 @@ if DATABASE_URL.startswith("postgresql://"):
 if DATABASE_URL.startswith("sqlite:///"):
     Path(DATABASE_URL.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False, "timeout": 30} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+if engine.dialect.name=='postgresql':
+    @event.listens_for(engine,'connect')
+    def postgres_search_path(connection,_):
+        with connection.cursor() as cursor:cursor.execute('SET search_path TO public, extensions')
 if DATABASE_URL.startswith("sqlite"):
     @event.listens_for(engine, "connect")
     def sqlite_foreign_keys(connection, _):

@@ -13,6 +13,8 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import KnowledgeSearch from './features/KnowledgeSearch';
+import PushSettings from './features/PushSettings';
 import {
   Waves,
   Search,
@@ -118,6 +120,9 @@ function MapView(props: {
 }
 import { workflowLabel } from "./labels";
 import ShareModal from "./features/ShareModal";
+
+
+
 import LakeDeliveryBar from "./components/LakeDeliveryBar";
 import RiverCleanCinemaSection from "./components/RiverCleanCinemaSection";
 import PureFlowHeroVideo from "./components/PureFlowHeroVideo";
@@ -254,6 +259,7 @@ function WaterCard({
 }
 
 export function ExplorePage() {
+  const [page,setPage]=useState(1);
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get("q") || ""),
     [type, setType] = useState(""),
@@ -265,6 +271,7 @@ export function ExplorePage() {
     [to, setTo] = useState(""),
     [selected, setSelected] = useState("");
   useEffect(() => setSearch(params.get("q") || ""), [params]);
+  useEffect(()=>setPage(1),[search,type,state,availability,from,to]);
   const query = new URLSearchParams({
     q: search,
     type,
@@ -272,6 +279,7 @@ export function ExplorePage() {
     availability,
     start: from,
     end: to,
+    page:String(page),page_size:'50',
   }).toString();
   const registry = useRegistry(query);
   const items = registry.data?.items || [];
@@ -446,6 +454,7 @@ export function ExplorePage() {
             )}
           </div>
           <div className="results-note">
+            <button className="text-button" disabled={page===1||registry.isPending} onClick={()=>{setPage(p=>p-1);setSelected('');}}>Previous</button><span>Page {page}</span><button className="text-button" disabled={registry.isPending||page*50>=(registry.data?.total||0)} onClick={()=>{setPage(p=>p+1);setSelected('');}}>Next</button>
             <Info size={16} />
             <span>
               Activity is a record of cases.
@@ -877,7 +886,7 @@ export function PassportPage() {
             </aside>
           </div>
         )}
-        {tab === "History" && <EventTimeline events={d.events} />}
+        {tab === "History" && <><KnowledgeSearch id={id!}/><EventTimeline events={d.events} /></>}
         {tab === "Incidents" && (
           <div className="record-list">
             {d.cases.map((c) => (
@@ -1129,26 +1138,11 @@ export function LandingPage() {
   const [donationAmount, setDonationAmount] = useState<number>(50);
 
   const faqs = [
-    {
-      q: "How Does Citizen Reporting Provide Clean Water?",
-      a: "Every report you contribute feeds directly into GPS-verified forensics, alerting State Pollution Control Boards and deploying rapid cleanup boats with legally documented response SLAs."
-    },
-    {
-      q: "How Do You Ensure The Water Stays Flowing Long-Term?",
-      a: "Access to water is more than a basic need; it's the foundation for health, education, and economic growth. We design projects with community ownership at the core, ensuring every sensor system is maintained, protected, and sustained for years to come."
-    },
-    {
-      q: "Where Does Your Organization Work?",
-      a: "AquaRelay operates across key freshwater basins, urban catchment lakes, and rural irrigation networks, coordinating active cleanup machinery and eco-patrol squads across vulnerable waterways."
-    },
-    {
-      q: "Can I Choose Which Catchment Project Needs Immediate Action?",
-      a: "Yes. Through the Explore Water Map, you can review live cleanliness scores, dissolved oxygen levels, and active contamination cases to direct watchdog attention where it is needed most."
-    },
-    {
-      q: "How Do Automated Cleanup Machines Save Our Waters?",
-      a: "Floating solar-powered trash barriers, micro-bubble oxygenators, and autonomous skimmer boats physically extract floating debris and restore biological oxygen levels before contaminants spread downstream."
-    }
+    {q:"How does AquaRelay help?",a:"It connects observations, evidence, investigations and documented actions to a permanent water-body record."},
+    {q:"Where is the first registry?",a:"The launch region is Bengaluru. OpenStreetMap identities require local review and responsible organisation assignments."},
+    {q:"Does AquaRelay establish water safety?",a:"No. Reports record observations for investigation; qualified experts assess their cause and implications."},
+    {q:"How can I contribute?",a:"Report an observation, add evidence, follow a water body or connect a permitted dataset."},
+    {q:"How is recovery recorded?",a:"Organisations preserve dated action notes and supporting before/after evidence in the case history."}
   ];
 
   return (
@@ -1177,7 +1171,7 @@ export function LandingPage() {
             </div>
             <div className="about-right">
               <p className="about-lead-text">
-                Every community deserves reliable, safe water. At AquaRelay, we transform unsafe sources into sustainable systems through smart engineering, citizen reporting, and rapid cleanup partnerships. By combining innovation with community vigilance, we create long-term solutions that empower families.
+                Every water body has a history. AquaRelay connects scattered citizen, research and institutional records so evidence, investigations, actions and recovery remain accessible.
               </p>
               <Link to="/explore" className="pureflow-pill-btn">
                 Our Mission <ArrowRight size={14} />
@@ -1188,20 +1182,20 @@ export function LandingPage() {
           {/* Numbers / Impact Stats Row (from the image) */}
           <div className="pureflow-stats-row">
             <div className="pureflow-stat-card">
-              <span className="stat-number">50<sup>+</sup></span>
-              <span className="stat-label">Protected Catchments</span>
+              <span className="stat-number">{registry.data?.total ?? "—"}</span>
+              <span className="stat-label">Registered Water Bodies</span>
             </div>
             <div className="pureflow-stat-card">
-              <span className="stat-number">1.2M<sup>+</sup></span>
-              <span className="stat-label">Citizens Vigilant</span>
+              <span className="stat-number">4</span>
+              <span className="stat-label">Contributor Roles</span>
             </div>
             <div className="pureflow-stat-card">
-              <span className="stat-number">150K<sup>+</sup></span>
-              <span className="stat-label">Forensic Readings Logged</span>
+              <span className="stat-number">7</span>
+              <span className="stat-label">Workflow States</span>
             </div>
             <div className="pureflow-stat-card">
-              <span className="stat-number">98%</span>
-              <span className="stat-label">Restoration SLA Rate</span>
+              <span className="stat-number">1</span>
+              <span className="stat-label">Shared Living Record</span>
             </div>
           </div>
         </div>
@@ -1213,7 +1207,7 @@ export function LandingPage() {
           <div className="yellow-section-header">
             <div>
               <span className="feature-amber-pill">
-                <Sparkles size={13} /> ACTIVE WATER INITIATIVES
+                <Sparkles size={13} /> WAYS TO CONTRIBUTE
               </span>
               <h3 className="yellow-title">Make a Meaningful Impact Today</h3>
             </div>
@@ -1231,11 +1225,11 @@ export function LandingPage() {
               </div>
               <div className="card-progress">
                 <div className="progress-labels">
-                  <span>Active Watchdogs: <strong>$98,090</strong></span>
-                  <span>Goal: <strong>$260,000</strong></span>
+                  <span>Evidence: <strong>Community records</strong></span>
+                  <span>Review: <strong>Human confirmation</strong></span>
                 </div>
                 <div className="progress-track">
-                  <div className="progress-fill" style={{ width: "68%" }} />
+                  <div className="progress-fill" style={{ width: "100%" }} />
                 </div>
               </div>
               <Link to="/explore" className="yellow-btn-dark">
@@ -1245,17 +1239,17 @@ export function LandingPage() {
 
             <div className="pureflow-yellow-card highlight-bar">
               <div className="card-top">
-                <span className="card-badge">ECO-PATROL FLEET</span>
-                <h4>Health & Sanitation Machine Drive</h4>
-                <p>Deploy rapid eco-patrol machinery and floating solar barriers to prevent industrial sludge contamination.</p>
+                <span className="card-badge">DOCUMENTED RESPONSE</span>
+                <h4>Investigation & Restoration Records</h4>
+                <p>Contribute inspection notes, sampling information and dated restoration evidence to the appropriate case.</p>
               </div>
               <div className="card-progress">
                 <div className="progress-labels">
-                  <span>Machines Deployed: <strong>$75,980</strong></span>
-                  <span>Goal: <strong>$120,000</strong></span>
+                  <span>Actions: <strong>Recorded history</strong></span>
+                  <span>Closure: <strong>Supporting evidence</strong></span>
                 </div>
                 <div className="progress-track">
-                  <div className="progress-fill" style={{ width: "82%" }} />
+                  <div className="progress-fill" style={{ width: "100%" }} />
                 </div>
               </div>
               <Link to="/report" className="yellow-btn-dark">
@@ -1275,10 +1269,10 @@ export function LandingPage() {
           <div className="gallery-section-header">
             <div>
               <span className="pureflow-section-tag">
-                <span className="pureflow-dot-amber" /> GROUND ZERO FORENSICS & RECOVERY
+                <span className="pureflow-dot-amber" /> FIELD OBSERVATIONS & RECOVERY
               </span>
               <h2 className="pureflow-heading-mid">
-                Living Proof of Clean Waters in Motion.
+                Freshwater Stories in Motion.
               </h2>
             </div>
           </div>
@@ -1356,7 +1350,7 @@ export function LandingPage() {
                 <span className="pureflow-dot-amber" /> TAKE ACTION
               </span>
               <h3>Stand Up for Living Waters.</h3>
-              <p>Join thousands of active citizens safeguarding catchments and protecting communities.</p>
+              <p>Contribute observations and evidence to the history of your local water bodies.</p>
 
               <div className="donation-tabs">
                 <button
@@ -1364,33 +1358,33 @@ export function LandingPage() {
                   className={`tab-btn ${donationFrequency === "once" ? "active" : ""}`}
                   onClick={() => setDonationFrequency("once")}
                 >
-                  Give Once
+                  Make a report
                 </button>
                 <button
                   type="button"
                   className={`tab-btn ${donationFrequency === "monthly" ? "active" : ""}`}
                   onClick={() => setDonationFrequency("monthly")}
                 >
-                  Monthly
+                  Follow updates
                 </button>
               </div>
 
               <div className="amount-pills">
-                {[25, 50, 100, 250].map((amt) => (
+                {[25, 50, 100, 250].map((amt, idx) => (
                   <button
                     key={amt}
                     type="button"
                     className={`amount-pill ${donationAmount === amt ? "active" : ""}`}
                     onClick={() => setDonationAmount(amt)}
                   >
-                    ${amt} <small>USD/{donationFrequency === "monthly" ? "mo" : "once"}</small>
+                    {["Fish", "Foam", "Waste", "Other"][idx]} <small>Observation</small>
                   </button>
                 ))}
               </div>
 
               <div className="action-submit-row">
-                <Link to="/report" className="pureflow-btn-amber full-width">
-                  Report Lake Incident Today <ArrowRight size={16} />
+                <Link to={donationFrequency === "monthly" ? "/following" : `/report?type=${({25:"fish_mortality",50:"foam",100:"waste_dumping",250:"unsure"} as Record<number,string>)[donationAmount]}`} className="pureflow-btn-amber full-width">
+                  {donationFrequency === "monthly" ? "Follow your local waters" : "Report Lake Incident Today"} <ArrowRight size={16} />
                 </Link>
               </div>
             </div>
@@ -1399,10 +1393,10 @@ export function LandingPage() {
               <div className="pureflow-water-tap-card">
                 <div className="tap-badge">
                   <Heart size={14} className="text-amber-500 fill-amber-500" />
-                  <span>COMMUNITY MONITORED SAFE TAP</span>
+                  <span>ILLUSTRATIVE COMMUNITY IMAGE</span>
                 </div>
                 <h4>Pure Water for Every Child</h4>
-                <p>Real-time forensics ensure zero industrial runoff reaches municipal wells.</p>
+                <p>Connected observations and actions help communities understand their local waters. This image is illustrative.</p>
               </div>
             </div>
           </div>
@@ -1419,7 +1413,7 @@ export function LandingPage() {
                 <span>AquaRelay<small>.</small></span>
               </div>
               <p>
-                Transforming compromised freshwater sources into living, protected ecosystems through citizen vigilance and rapid intervention.
+                Connecting freshwater records so evidence, history, response and recovery stay accessible.
               </p>
             </div>
 
@@ -1428,7 +1422,7 @@ export function LandingPage() {
               <ul>
                 <li><Link to="/report">Report Anomaly</Link></li>
                 <li><Link to="/explore">Explore Water Map</Link></li>
-                <li><Link to="/dispatch-tracker">Track Dispatches</Link></li>
+                <li><Link to="/dispatch-tracker">Track Cases</Link></li>
                 <li><Link to="/organisations">Organisations</Link></li>
               </ul>
             </div>
@@ -1437,8 +1431,8 @@ export function LandingPage() {
               <h5>Programs</h5>
               <ul>
                 <li><Link to="/explore">Catchment Sensors</Link></li>
-                <li><Link to="/explore">Eco-Patrol Boats</Link></li>
-                <li><Link to="/notifications">Citizen Forensics</Link></li>
+                <li><Link to="/explore">Recorded Actions</Link></li>
+                <li><Link to="/notifications">Community Updates</Link></li>
                 <li><Link to="/settings">Community Registry</Link></li>
               </ul>
             </div>
@@ -1449,7 +1443,7 @@ export function LandingPage() {
                 <li><Link to="/developers">Open Data API</Link></li>
                 <li><Link to="/settings">Privacy Policy</Link></li>
                 <li><Link to="/settings">Terms of Service</Link></li>
-                <li><Link to="/notifications">Authority Dispatch SLAs</Link></li>
+                <li><Link to="/notifications">Case Updates</Link></li>
               </ul>
             </div>
           </div>
@@ -1457,7 +1451,7 @@ export function LandingPage() {
           <div className="pureflow-footer-bottom">
             <span>© 2026 AquaRelay PureFlow Initiative. All rights reserved.</span>
             <div className="footer-social-links">
-              <span>Living Waters</span> · <span>GPS Verified</span> · <span>Automated SLAs</span>
+              <span>Living Waters</span> · <span>Source Linked</span> · <span>Documented Actions</span>
             </div>
           </div>
         </div>
@@ -1497,7 +1491,7 @@ export function FollowingPage() {
     <div className="page">
       <PageHeader
         eyebrow="YOUR PERSONAL REGISTRY"
-        title="Following"
+        title="Keep your waters close."
         description="Recorded updates from the places you choose to follow."
       >
         <button className="button secondary" onClick={() => setArea(true)}>
@@ -1531,6 +1525,7 @@ export function FollowingPage() {
             {a.latitude}, {a.longitude} · {a.radius_m} m radius
           </p>
           <small>Explicitly saved area. No continuous location tracking.</small>
+          <button className="text-button" onClick={async()=>{try{await api(`/areas/${a.id}`,{method:'DELETE'});await following.refetch();toast('Area removed');}catch(e){toast((e as Error).message);}}}>Remove saved area</button>
         </article>
       ))}
       {!following.data?.areas.length && (
@@ -1636,7 +1631,8 @@ export function NotificationsPage() {
       api<{ items: any[]; unread: number; scheduled: number }>(
         "/notifications",
       ),
-    refetchInterval: 5000,
+    refetchInterval: 30000,
+    enabled: !!user,
   });
   async function mark(id: string) {
     try {
@@ -1685,7 +1681,7 @@ export function NotificationsPage() {
               }}
             />
             <span style={{ fontSize: "13px", fontWeight: "600", color: "#1c1917" }}>
-              Viewing real-time public waterbody updates and automated authority dispatches.
+              Sign in to view updates from your followed water bodies and areas.
             </span>
           </div>
           <Link
@@ -2221,7 +2217,8 @@ export function LoginPage() {
             </button>
 
             {/* Quick 1-Click Demo Login */}
-            <div className="demo-accounts" style={{ marginTop: "16px", padding: "14px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "10px" }}>
+            <p><Link to="/account/recovery">Forgot your password?</Link></p>
+            {config.data?.demo_mode && <div className="demo-accounts" style={{ marginTop: "16px", padding: "14px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                 <Badge state="warning">1-CLICK DEMO ACCESS</Badge>
                 <small style={{ color: "#92400e", fontWeight: 600 }}>Test identities</small>
@@ -2246,7 +2243,7 @@ export function LoginPage() {
                   ⚡ Sign in as Manager
                 </button>
               </div>
-            </div>
+            </div>}
           </form>
         )}
       </div>
@@ -2527,6 +2524,7 @@ export function SettingsPage() {
               </label>
             </div>
             <button className="button primary">Save preferences</button>
+            <label><input type="checkbox" checked={!!preferences.email} disabled={preferences.capabilities?.email!=='available'} onChange={e=>setPreferences({...preferences,email:e.target.checked})}/> Email recorded updates (requires configured delivery and verified email)</label>
           </form>
 
           <aside>
@@ -2567,8 +2565,9 @@ export function SettingsPage() {
             </div>
             <div className="info-panel">
               <h3>Optional delivery channels</h3>
-              <p>Email: unavailable — adapter not configured.</p>
-              <p>Browser push: unavailable — adapter not configured or consented.</p>
+              <button type="button" className="button secondary" onClick={async()=>{try{const result=await api<{message:string}>('/auth/request-verification',{method:'POST'});toast(result.message);}catch(e){toast((e as Error).message);}}}>Send email verification link</button>
+              <p>Email: {preferences.capabilities?.email||'unavailable'}</p>
+              <PushSettings/>
               <p className="fine-print">
                 AquaRelay does not claim external delivery from in-app updates.
               </p>

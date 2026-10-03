@@ -14,15 +14,11 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { LocateFixed, Maximize2, Layers, Info } from "lucide-react";
 import type { WaterBody } from "./types";
 setWorkerUrl(workerUrl);
-const neutral: StyleSpecification = {
+const realMap: StyleSpecification = {
   version: 8,
-  sources: {},
+  sources: { streets:{type:'raster',tiles:[import.meta.env.VITE_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'} },
   layers: [
-    {
-      id: "paper",
-      type: "background",
-      paint: { "background-color": "#EAEDE4" },
-    },
+    {id:'streets-basemap',type:'raster',source:'streets'},
   ],
 };
 export default function MapView({
@@ -44,19 +40,21 @@ export default function MapView({
     [error, setError] = useState(""),
     [locationMessage, setLocationMessage] = useState("");
   const current = useRef(items);
+  const locationMarker=useRef<Marker|null>(null);
+  const autoFit=useRef(true);
   current.current = items;
   const configuredStyle = import.meta.env.VITE_MAP_STYLE_URL;
   const demoContext =
-    !configuredStyle && items.length > 0 && items.every((w) => w.synthetic);
+    items.length > 0 && items.every((w) => w.synthetic);
   useEffect(() => {
     if (!container.current) return;
     try {
       const instance = new Map({
         container: container.current,
-        style: import.meta.env.VITE_MAP_STYLE_URL || neutral,
+        style: import.meta.env.VITE_MAP_STYLE_URL || realMap,
         center: [77.59, 12.97],
         zoom: 13.4,
-        attributionControl: { compact: true },
+        attributionControl: { compact: false },
         renderWorldCopies: false,
       });
       map.current = instance;
@@ -80,12 +78,7 @@ export default function MapView({
         });
         instance.addSource("district", {
           type: "geojson",
-          data:
-            !configuredStyle &&
-            current.current.length > 0 &&
-            current.current.every((w) => w.synthetic)
-              ? district(current.current)
-              : { type: "FeatureCollection", features: [] },
+          data:{ type: "FeatureCollection", features: [] },
         });
         instance.addLayer({
           id: "parks",
@@ -185,6 +178,7 @@ export default function MapView({
         setError("Map layer unavailable. The results list remains available."),
       );
       return () => {
+        locationMarker.current?.remove();locationMarker.current=null;
         instance.remove();
         map.current = null;
         setReady(false);
@@ -214,9 +208,7 @@ export default function MapView({
   useEffect(() => {
     if (!ready || !map.current) return;
     (map.current.getSource("district") as GeoJSONSource)?.setData(
-      demoContext
-        ? district(items)
-        : { type: "FeatureCollection", features: [] },
+      { type: "FeatureCollection", features: [] },
     );
     (map.current.getSource("water-points") as GeoJSONSource)?.setData({
       type: "FeatureCollection",
@@ -236,7 +228,7 @@ export default function MapView({
           geometry: w.geometry!,
         })),
     });
-    fit();
+    if(autoFit.current)fit();
   }, [items, ready]);
   useEffect(() => {
     const water = items.find((w) => w.id === selected);
@@ -322,20 +314,22 @@ export default function MapView({
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        autoFit.current=false;
+        if(map.current){locationMarker.current?.remove();locationMarker.current=new Marker({color:'#1769e0'}).setLngLat([position.coords.longitude,position.coords.latitude]).addTo(map.current);locationMarker.current.getElement().setAttribute('aria-label','Your approximate device location');}
         map.current?.flyTo({
           center: [position.coords.longitude, position.coords.latitude],
           zoom: 13,
           essential: false,
         });
         setLocationMessage(
-          `Device location shown.${items.some((w) => w.synthetic) ? " Demo places use synthetic coordinates." : ""}`,
+          `Device location shown · accuracy approximately ${Math.round(position.coords.accuracy)} metres.${items.some((w) => w.synthetic) ? " Demo places use synthetic coordinates." : ""}`,
         );
       },
       () =>
         setLocationMessage(
           "Location permission denied or unavailable. Search or select a place manually.",
         ),
-      { timeout: 8000 },
+      { timeout: 10000, enableHighAccuracy:true, maximumAge:30000 },
     );
   }
   return (
@@ -369,9 +363,7 @@ export default function MapView({
         <span>
           {configuredStyle
             ? "Configured basemap"
-            : demoContext
-              ? "Synthetic demo layer"
-              : "Neutral map · no basemap configured"}
+            : "OpenStreetMap street map"}
         </span>
       </div>
       {demoContext && (
@@ -397,61 +389,6 @@ export default function MapView({
       )}
     </div>
   );
-}
-function district(items: WaterBody[]): GeoJSON.FeatureCollection {
-  const center = items.length
-    ? [
-        items.reduce((s, w) => s + w.longitude, 0) / items.length,
-        items.reduce((s, w) => s + w.latitude, 0) / items.length,
-      ]
-    : [77.59, 12.97];
-  const [x, y] = center;
-  const features: GeoJSON.Feature[] = [];
-  for (let i = -4; i <= 4; i++) {
-    features.push({
-      type: "Feature",
-      properties: { kind: "street" },
-      geometry: {
-        type: "LineString",
-        coordinates: [
-          [x - 0.04, y + i * 0.006 - 0.01],
-          [x + 0.04, y + i * 0.006 + 0.01],
-        ],
-      },
-    });
-    features.push({
-      type: "Feature",
-      properties: { kind: "street" },
-      geometry: {
-        type: "LineString",
-        coordinates: [
-          [x + i * 0.009 - 0.008, y - 0.04],
-          [x + i * 0.009 + 0.008, y + 0.04],
-        ],
-      },
-    });
-  }
-  for (let i = 0; i < 5; i++) {
-    const px = x - 0.025 + i * 0.012,
-      py = y + (i % 2 === 0 ? 0.012 : -0.015);
-    features.push({
-      type: "Feature",
-      properties: { kind: "park" },
-      geometry: {
-        type: "Polygon",
-        coordinates: [
-          [
-            [px, py],
-            [px + 0.006, py + 0.001],
-            [px + 0.005, py + 0.006],
-            [px - 0.001, py + 0.005],
-            [px, py],
-          ],
-        ],
-      },
-    });
-  }
-  return { type: "FeatureCollection", features };
 }
 function workflowText(w: WaterBody) {
   return w.case_count

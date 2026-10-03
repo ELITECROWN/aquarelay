@@ -13,6 +13,7 @@ import {
 import { api } from "../api";
 import { useSession } from "../session";
 import ShareModal from "./ShareModal";
+import ResolutionStory from './ResolutionStory';
 import {
   date,
   errorText,
@@ -131,9 +132,7 @@ export default function IncidentPage() {
     [review, setReview] = useState("reviewed");
   const [shareAction, setShareAction] = useState<Item>(),
     [abuseReason, setAbuseReason] = useState(""),
-    [moderationId, setModerationId] = useState(""),
-    [before, setBefore] = useState(""),
-    [after, setAfter] = useState("");
+    [moderationId, setModerationId] = useState("");
   const [reportReviewId, setReportReviewId] = useState(""),
     [reportReviewState, setReportReviewState] = useState(
       "accepted_for_investigation",
@@ -604,97 +603,7 @@ export default function IncidentPage() {
               independently recorded follow-up.
             </p>
           </section>
-          <section className="wf-panel">
-            <h2>Compare supporting photographs</h2>
-            <p className="wf-muted">
-              Choose recorded attachments to inspect visible differences. The
-              selected positions do not establish chronology, chemical safety or
-              complete ecological recovery.
-            </p>
-            {detail.evidence.filter(
-              (item) => !item.mime_type?.startsWith("video/"),
-            ).length >= 2 ? (
-              <>
-                <div className="wf-form-grid">
-                  <label className="wf-field">
-                    Earlier / before attachment
-                    <select
-                      value={before}
-                      onChange={(event) => setBefore(event.target.value)}
-                    >
-                      <option value="">Choose attachment</option>
-                      {detail.evidence
-                        .filter((item) => !item.mime_type?.startsWith("video/"))
-                        .map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.name || item.id}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <label className="wf-field">
-                    Later / follow-up attachment
-                    <select
-                      value={after}
-                      onChange={(event) => setAfter(event.target.value)}
-                    >
-                      <option value="">Choose attachment</option>
-                      {detail.evidence
-                        .filter((item) => !item.mime_type?.startsWith("video/"))
-                        .map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.name || item.id}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                </div>
-                {before && after && (
-                  <div className="wf-comparison">
-                    {[before, after].map((evidence, index) => {
-                      const item = detail.evidence.find(
-                        (row) => row.id === evidence,
-                      )!;
-                      return (
-                        <figure key={`${evidence}-${index}`}>
-                          <img
-                            src={item.url}
-                            alt={`${index === 0 ? "Earlier / before" : "Follow-up"} selected evidence: ${item.caption || item.name}`}
-                          />
-                          <figcaption>
-                            <strong>
-                              {index === 0
-                                ? "Earlier / before selection"
-                                : "Follow-up selection"}
-                            </strong>
-                            <small>Source: evidence {item.id}</small>
-                            <small>Uploaded: {date(item.created_at)}</small>
-                            <small>Photo capture date: not recorded</small>
-                            <small>
-                              Case location: {incident.waterbody_name};
-                              photo-specific position not recorded
-                            </small>
-                            {item.synthetic && (
-                              <Pill>Synthetic demo evidence</Pill>
-                            )}
-                          </figcaption>
-                        </figure>
-                      );
-                    })}
-                  </div>
-                )}
-                <Notice>
-                  Viewpoint comparability and photograph capture dates have not
-                  been documented. Upload dates are shown separately.
-                </Notice>
-              </>
-            ) : (
-              <p className="wf-muted">
-                A pair of dated before/follow-up photographs has not been
-                documented for this case.
-              </p>
-            )}
-          </section>
+          <ResolutionStory id={incident.id} photos={detail.evidence} canManage={canManage} />
           <section className="wf-panel">
             <h2>Public notes</h2>
             {detail.notes
@@ -1204,10 +1113,10 @@ export default function IncidentPage() {
                   </label>
                 )}
                 {form === "request" && (
-                  <p className="wf-muted">
+                  <><p className="wf-muted">
                     Use an approved checklist. Do not request hazardous sampling
                     or unsafe field activity.
-                  </p>
+                  </p><button type="button" className="wf-button secondary" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const result=await api<{suggestions:{description:string;record_ids:string[]}[]}>(`/api/v1/cases/${incident.id}/evidence-checklist`);if(result.suggestions.length)setDescription(result.suggestions.map(s=>s.description+' (Records: '+s.record_ids.join(', ')+')').join('\n'));else setMessage('No missing items detected by the workflow checklist. Review the case before requesting additional evidence.');}catch(e){setError(errorText(e));}finally{setBusy(false);}}}>Draft request from recorded gaps</button></>
                 )}
                 <button
                   className="wf-button"

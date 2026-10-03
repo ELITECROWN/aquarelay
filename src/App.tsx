@@ -23,10 +23,16 @@ import {
   OrganisationsPage,
   LoginPage,
   SettingsPage,
+  FollowingPage,
+  DevelopersPage,
 } from "./pages";
 import ReportPage from "./features/ReportPage";
 import IncidentPage from "./features/IncidentPage";
 import WorkspacePage from "./features/WorkspacePage";
+import RegistryWorkspace from "./features/RegistryWorkspace";
+import AccountRecovery from './features/AccountRecovery';
+import ImportPage from "./features/ImportPage";
+import IntegrationsPage from "./features/IntegrationsPage";
 import DispatchDetailsPage from "./features/DispatchDetailsPage";
 import ThreeDWaterScene from "./components/ThreeDWaterScene";
 import WaterSlideTrail from "./components/WaterSlideTrail";
@@ -168,15 +174,6 @@ export default function App() {
     };
   }, [client]);
 
-  if (!isOnline) {
-    return (
-      <>
-        <LusionCursor />
-        <Error404Page isOffline={true} />
-      </>
-    );
-  }
-
   const isHome = location.pathname === "/";
 
   return (
@@ -187,6 +184,8 @@ export default function App() {
       <WaterSlideTrail />
       <SideMenuDrawer />
       <PureFlowNavbar />
+      {!isOnline && <div className="section-note" role="status">Offline — you can save report drafts on this device. Server records and submissions require a connection.</div>}
+      {config.data?.demo_mode && <div className="section-note" role="status">Demonstration environment — fictional water bodies and records are labelled synthetic.</div>}
 
       <ErrorBoundary>
         <main
@@ -201,6 +200,14 @@ export default function App() {
             <Route path="/report" element={<ReportPage />} />
             <Route path="/incidents/:id" element={<IncidentPage />} />
             <Route path="/workspace" element={<WorkspacePage />} />
+            <Route path="/registry" element={<RegistryWorkspace />} />
+            <Route path="/account/recovery" element={<AccountRecovery />} />
+            <Route path="/account/verify" element={<AccountRecovery />} />
+            <Route path="/following" element={<FollowingPage />} />
+            <Route path="/developers" element={<DevelopersPage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+            <Route path="/integrations/import" element={<ImportPage />} />
+            <Route path="/integrations/:id" element={<IntegrationsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/organisations" element={<OrganisationsPage />} />
             <Route path="/organisations/:id" element={<OrganisationsPage />} />

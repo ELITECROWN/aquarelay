@@ -117,7 +117,8 @@ def suggest_mapping(columns):
     aliases = {"site_name": "site_name", "waterbody_id": "waterbody_id", "observed_at": "observed_at", "water_temp": "temperature", "temperature": "temperature",
                "ph_level": "ph", "ph": "ph", "external_id": "external_id", "event_id": "external_id", "unit": "unit", "parameter": "parameter", "value": "value",
                "source_updated_at": "source_updated_at", "latitude": "latitude", "longitude": "longitude", "photo": "photo"}
-    return {column: aliases[column.lower()] for column in columns if column.lower() in aliases}
+    aliases.update({'site':'site_name','location':'site_name','date':'observed_at','time':'observed_at','timestamp':'observed_at','temp':'temperature','watertemperature':'temperature','wt':'temperature','ph_lvl':'ph','phlevel':'ph','do':'dissolved_oxygen','dissolvedoxygen':'dissolved_oxygen'})
+    return {column: aliases[column.lower().strip().replace(' ','_')] for column in columns if column.lower().strip().replace(' ','_') in aliases}
 
 
 def parse_time(value, timezone_name):

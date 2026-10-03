@@ -3,6 +3,8 @@ import io
 import os
 import time
 import re
+import httpx
+from urllib.parse import urlsplit
 from pathlib import Path
 from fractions import Fraction
 import av
@@ -30,7 +32,46 @@ class LocalStorage:
                 raise ValueError("Storage deletion escaped its root")
         for path in candidates: path.unlink(missing_ok=True)
 
-storage=LocalStorage()
+class SupabaseStorage:
+    """Both originals and derivatives stay in a PRIVATE bucket; API enforces access."""
+    def __init__(self,url,key,bucket,transport=None):
+        parsed=urlsplit(url)
+        if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.query:
+            raise ValueError('Supabase URL must be an HTTPS project URL')
+        if not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}',bucket): raise ValueError('Invalid bucket')
+        self.url=url.rstrip('/');self.bucket=bucket
+        self.client=httpx.Client(timeout=30,transport=transport,headers={'Authorization':'Bearer '+key,'apikey':key})
+
+    def request(self,method,key,**kwargs):
+        try:
+            response=self.client.request(method,self.url+'/storage/v1/object/'+self.bucket+'/'+key,**kwargs)
+            response.raise_for_status()
+            return response
+        except (httpx.HTTPError, OSError):
+            raise HTTPException(503,'Persistent media storage is unavailable. Retry without submitting a duplicate report.')
+
+    def save(self,evidence_id,original,derivative,extension):
+        if not re.fullmatch(r'[a-zA-Z0-9-]{1,80}',evidence_id) or extension not in {'.jpg','.mp4'}: raise ValueError('Invalid storage identity')
+        original_key='private/'+evidence_id+'.bin';public_key='public/'+evidence_id+extension
+        self.request('POST',original_key,content=original,headers={'Content-Type':'application/octet-stream','x-upsert':'true'})
+        self.request('POST',public_key,content=derivative,headers={'Content-Type':'image/jpeg' if extension=='.jpg' else 'video/mp4','x-upsert':'true'})
+        return 'supabase://'+self.bucket+'/'+original_key,'supabase://'+self.bucket+'/'+public_key
+
+    def read(self,path):
+        prefix='supabase://'+self.bucket+'/'
+        if not path.startswith(prefix): raise ValueError('Unexpected bucket')
+        key=path[len(prefix):]
+        if not re.fullmatch(r'(private|public)/[a-zA-Z0-9-]{1,80}\.(bin|jpg|mp4)',key): raise ValueError('Invalid object identity')
+        return self.request('GET',key).content
+
+    def delete(self,evidence_id):
+        if not re.fullmatch(r'[a-zA-Z0-9-]{1,80}',evidence_id): raise ValueError('Invalid storage identity')
+        try:
+            response=self.client.delete(self.url+'/storage/v1/object/'+self.bucket,json={'prefixes':['private/'+evidence_id+'.bin','public/'+evidence_id+'.jpg','public/'+evidence_id+'.mp4']})
+            response.raise_for_status()
+        except httpx.HTTPError: raise HTTPException(503,'Persistent media deletion is unavailable. Retry later.')
+
+storage=SupabaseStorage(os.environ['SUPABASE_URL'],os.environ['SUPABASE_SERVICE_ROLE_KEY'],os.getenv('SUPABASE_STORAGE_BUCKET','evidence')) if os.getenv('STORAGE_BACKEND')=='supabase' else LocalStorage()
 
 def sanitise_video(content):
     if len(content)<12 or content[4:8]!=b"ftyp":

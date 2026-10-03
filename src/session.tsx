@@ -13,6 +13,7 @@ import type { User } from "./types";
 const STORAGE_KEY = "aquarelay_user_session";
 
 function getStoredUser(): User | null {
+  if (navigator.onLine) return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -84,38 +85,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateProfile(data: { name: string; username: string; age?: number | null }) {
-    const usernameClean = data.username.trim().replace(/^@+/, "");
-    try {
-      const res = await api<{ user: User; message: string }>("/auth/profile", {
-        method: "PUT",
-        body: JSON.stringify({
-          name: data.name.trim(),
-          username: usernameClean,
-          age: data.age !== undefined && data.age !== null && data.age !== ("" as any) ? Number(data.age) : null,
-        }),
-      });
-      if (res?.user) {
-        updateUser({ ...res.user, csrf_token: res.user.csrf_token || user?.csrf_token });
-        return;
-      }
-    } catch (error) {
-      // If the backend has a conflict (409), rethrow so UI can notify user
-      if (error instanceof Error && error.message.includes("already taken")) {
-        throw error;
-      }
-      console.warn("Server profile update failed, updating local state:", error);
-    }
-
-    // Always update local state even if offline
-    if (user) {
-      const updated: User = {
-        ...user,
-        name: data.name.trim(),
-        username: usernameClean,
-        age: data.age !== undefined && data.age !== null && data.age !== ("" as any) ? Number(data.age) : null,
-      };
-      updateUser(updated);
-    }
+    const res = await api<{ user: User }>("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify({ ...data, name: data.name.trim(), username: data.username.trim().replace(/^@+/, ""), age: data.age ?? null }),
+    });
+    if (!res.user) throw new Error("The server did not confirm the profile update.");
+    updateUser(res.user);
   }
 
   useEffect(() => {

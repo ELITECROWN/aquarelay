@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useSession } from "../session";
+import { api } from '../api';
 import {
   canRetryDraft,
   listDrafts,
@@ -90,11 +91,12 @@ export default function ReportPage() {
   );
   const cases = useRecord<{ items: Case[] }>("/api/v1/cases?page_size=100");
   const [step, setStep] = useState(0),
-    [values, setValues] = useState<ReportValues>(initial),
+    [values, setValues] = useState<ReportValues>(()=>({...initial,observation_type:types.some(([key])=>key===params.get("type")) ? params.get("type")! : ""})),
     [observedLocal, setObservedLocal] = useState(localNow);
   const [media, setMedia] = useState<File[]>([]),
     [drafts, setDrafts] = useState<LocalDraft[]>([]),
     [current, setCurrent] = useState<LocalDraft>();
+  const [externalConsent,setExternalConsent]=useState(false);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
@@ -331,28 +333,24 @@ export default function ReportPage() {
           <CheckCircle2 size={42} className="text-rose-600" />
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 14px", borderRadius: "20px", color: "#065f46", fontSize: "12px", fontWeight: "650", margin: "14px 0" }}>
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
-            Automated Escalation Dispatched to Higher Environmental Authority
+            Community Report Saved · Awaiting Review
           </div>
-          <h1>Your lake observation is on record.</h1>
+          <h1>Your observation is on record.</h1>
           <p>
-            Community suspicious activity alert logged. Telemetry anomaly scores calculated and encrypted incident ticket delivered to designated authorities.
+            Your community report and uploaded evidence are stored. Review status, organisation response and delivery receipts are recorded separately on the incident timeline.
           </p>
           <dl className="wf-record-details">
             <dt>Report ID</dt>
             <dd>{submitted.reportId}</dd>
             <dt>Case ID</dt>
             <dd>{submitted.caseId}</dd>
-            <dt>Target Authority</dt>
-            <dd style={{ color: "#be123c", fontWeight: "600" }}>State Pollution Control Board & Wetlands Bureau</dd>
-            <dt>Routing Protocol</dt>
-            <dd>Automated Instant Relay (&lt; 500ms)</dd>
             <dt>Evidence uploaded</dt>
             <dd>{submitted.evidenceIds.length} file(s)</dd>
             <dt>Observation time</dt>
             <dd>{date(submitted.values.observed_at)}</dd>
           </dl>
           <Link className="wf-button" to={`/incidents/${submitted.caseId}`}>
-            View incident & authority timeline <ArrowRight size={17} />
+            View incident <ArrowRight size={17} />
           </Link>
           <button
             className="wf-button secondary"
@@ -372,12 +370,12 @@ export default function ReportPage() {
   return (
     <div className="wf-page">
       <WorkflowHeader
-        eyebrow="Lake Watchdog & Rapid Authority Alert"
-        title="Report Suspicious Lake Activity"
-        description="A real-time record of what you saw. Submissions automatically analyze contamination severity and route to designated environmental authorities."
+        eyebrow="Community observations"
+        title="Report an observation"
+        description="Record what you saw, preserve evidence and follow the documented response."
       >
         <Pill tone={online ? "" : "amber"}>
-          {online ? "Online · Authority Relay Active" : "Offline · saved locally"}
+          {online ? "Online" : "Offline · saved locally"}
         </Pill>
       </WorkflowHeader>
       <div className="wf-report-layout">
@@ -562,6 +560,15 @@ export default function ReportPage() {
                     />
                   </label>
                 </div>
+                <button type="button" className="wf-button secondary" disabled={busy || values.description.length < 8 || !navigator.onLine} onClick={async()=>{
+                  setBusy(true);setError('');try {
+                    const result=await api<{draft:Record<string,string>;issues:string[]}>('/api/v1/assistance/report-draft',{method:'POST',body:JSON.stringify({original_text:values.description,language:values.language,external_ai_consent:externalConsent})});
+                    setValues(previous=>({...previous,observation_type:result.draft.observation_type||previous.observation_type,count_estimate:result.draft.count_estimate||previous.count_estimate}));
+                    setMessage('Draft suggestions applied for your review. '+(result.draft.additional_observations?'Also mentioned: '+result.draft.additional_observations+'. ':'')+result.issues.join(' '));
+                  } catch(e){setError(errorText(e));}finally{setBusy(false);}
+                }}>Suggest structured fields from my statement</button>
+                <p className="wf-muted">Local vocabulary assistance for English, Hindi and Kannada. Review the observation and count before confirming. Your original text stays unchanged.</p>
+                <label className="wf-field"><span><input type="checkbox" checked={externalConsent} onChange={e=>setExternalConsent(e.target.checked)}/> Allow my statement to be sent to Google Gemini if configured. Google's free tier may use submitted data to improve products. Photos and account details are excluded.</span></label>
               </>
             )}
             {step === 2 && (
@@ -808,21 +815,7 @@ export default function ReportPage() {
           </footer>
         </section>
         <aside className="wf-report-aside">
-          <div className="wf-panel glass-panel" style={{ borderLeft: "4px solid #e11d48" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#e11d48", fontWeight: "700", fontSize: "11px", letterSpacing: "1px", marginBottom: "8px" }}>
-              <span className="radar-pulse" style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#e11d48", display: "inline-block" }} />
-              AUTOMATED AUTHORITY ESCALATION
-            </div>
-            <h3 style={{ margin: "4px 0 8px", fontSize: "15px" }}>Direct Transmission to Regulators</h3>
-            <p style={{ fontSize: "12px", lineHeight: "1.6", color: "#695057", margin: "0 0 10px" }}>
-              Once you submit this lake observation, our automated dispatch relay formats a verified incident package (GPS, imagery, contamination tags) and routes it directly to the State Pollution Control Board & Regional Lake Conservation Authority.
-            </p>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", fontSize: "10px", fontWeight: "600", color: "#be123c" }}>
-              <span style={{ background: "#ffe4e6", padding: "3px 8px", borderRadius: "12px" }}>Priority Scoring</span>
-              <span style={{ background: "#ffe4e6", padding: "3px 8px", borderRadius: "12px" }}>Auto-Assigned Jurisdiction</span>
-              <span style={{ background: "#ffe4e6", padding: "3px 8px", borderRadius: "12px" }}>2hr SLA Target</span>
-            </div>
-          </div>
+          <div className="wf-panel"><h3>Recorded response</h3><p>Submission creates a community observation for organisation review. External delivery and acknowledgement are shown only when recorded. A report does not establish cause or water safety.</p></div>
           <div className="wf-panel">
             <MapPin size={24} />
             <h3>Observe from a safe place</h3>

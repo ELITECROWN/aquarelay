@@ -104,7 +104,7 @@ export default function PureFlowHeroVideo() {
             Brighter Futures.
           </h1>
           <p className="pureflow-hero-sub">
-            When citizens, volunteers, and automated cleanup machines unite, our lakes and rivers regain life, clarity, and safety.
+            Connect freshwater observations, evidence and documented recovery in one living record.
           </p>
         </div>
       </div>

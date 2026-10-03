@@ -12,12 +12,12 @@ const python =
     : ".venv/bin/python";
 export default defineConfig({
   ...base,
-  use: { ...base.use, baseURL: "http://127.0.0.1:5174" },
+  use: { ...base.use, baseURL: "http://127.0.0.1:5184" },
   webServer: [
     {
-      command: `"${python}" -m uvicorn app.main:app --host 127.0.0.1 --port 8001`,
+      command: `"${python}" -m uvicorn app.main:app --host 127.0.0.1 --port 8011 --timeout-graceful-shutdown 3`,
       cwd: backend,
-      url: "http://127.0.0.1:8001/health",
+      url: "http://127.0.0.1:8011/health",
       reuseExistingServer: false,
       env: {
         DATABASE_URL: `sqlite:///${path.join(runtime, "aquarelay.sqlite").replaceAll("\\", "/")}`,
@@ -26,14 +26,14 @@ export default defineConfig({
         EMBEDDED_WORKER: "true",
         COOKIE_SECURE: "false",
         HANDOFF_RECIPIENTS_JSON: "{}",
-        CORS_ORIGINS: "http://127.0.0.1:5174,http://localhost:5174",
+        CORS_ORIGINS: "http://127.0.0.1:5184,http://localhost:5184",
       },
     },
     {
-      command: "npm run dev -- --port 5174 --strictPort",
-      url: "http://127.0.0.1:5174",
+      command: "npm run dev -- --port 5184 --strictPort",
+      url: "http://127.0.0.1:5184",
       reuseExistingServer: false,
-      env: { AQUARELAY_API_URL: "http://127.0.0.1:8001" },
+      env: { AQUARELAY_API_URL: "http://127.0.0.1:8011" },
     },
   ],
 });

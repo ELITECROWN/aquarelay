@@ -23,6 +23,7 @@ from .auth import current_user, require_user, require_manager
 from .db import get_db, SessionLocal
 from .models import *
 from .storage import storage,sanitise_video
+from .push import configured as push_configured
 
 router = APIRouter()
 STORAGE_PATH = Path(os.getenv("STORAGE_PATH", "./data/files")).resolve()
@@ -176,7 +177,8 @@ def waterbody_json(db, row, as_of=None):
 
 @router.get("/config")
 def config():
-    return {"demo_mode": DEMO_MODE, "capabilities": {"database": "sqlite_local_fallback" if os.getenv("DATABASE_URL", "sqlite").startswith("sqlite") else "postgresql_postgis", "ai": "rules_based", "email": "unavailable", "push": "unavailable", "external_delivery": "configuration_required", "uploads": "jpeg_png_webp", "standards_validation": "structural_subset_checks", "map_style_url": os.getenv("MAP_STYLE_URL", ""), "public_url": os.getenv("PUBLIC_URL", "http://localhost:5173")}, "district": {"name": "Demo Reedwater District", "synthetic": True, "center": [77.592,12.977]}}
+    from .mail import configured
+    return {"demo_mode": DEMO_MODE, "capabilities": {"database": "sqlite_local_fallback" if os.getenv("DATABASE_URL", "sqlite").startswith("sqlite") else "postgresql_postgis", "ai": "gemini_opt_in" if os.getenv('GEMINI_API_KEY') and os.getenv('GEMINI_MODEL') else "rules_based", "email": "account_email_configured" if configured() else "unavailable", "push": "available" if push_configured() else "unavailable", "storage":os.getenv('STORAGE_BACKEND','local'), "external_delivery": "configuration_required", "uploads": "jpeg_png_webp_mp4", "standards_validation": "structural_subset_checks", "map_style_url": os.getenv("MAP_STYLE_URL", ""), "public_url": os.getenv("PUBLIC_URL", "http://localhost:5173")}, "district": {"name": "Demo Reedwater District" if DEMO_MODE else "Bengaluru", "synthetic": DEMO_MODE, "center": [77.592,12.977]}}
 
 @router.get("/waterbodies")
 def waterbodies(q: str = "", type: str = "", state: str = "", availability: str = "", start: str = "", end: str = "", lat: float | None = Query(None,ge=-90,le=90), lon: float | None = Query(None,ge=-180,le=180), radius: float | None = Query(None,gt=0,le=500000), page: int = 1, page_size: int = 50, db: Session = Depends(get_db)):
@@ -414,6 +416,8 @@ def evidence_file(evidence_id:str,db:Session=Depends(get_db)):
     evidence=get_record(db,Evidence,evidence_id)
     if evidence.visibility!="public" or not evidence.report_id:
         raise HTTPException(403,"This evidence has not been approved for public display.")
+    if evidence.public_path.startswith('supabase://'):
+        return Response(storage.read(evidence.public_path),media_type=evidence.mime_type,headers={"X-Content-Type-Options":"nosniff","Cache-Control":"private,max-age=300"})
     if not Path(evidence.public_path).exists():
         raise HTTPException(404,"Stored media file unavailable.")
     return FileResponse(evidence.public_path,media_type=evidence.mime_type,headers={"X-Content-Type-Options":"nosniff","Cache-Control":"private,max-age=300"})
@@ -426,6 +430,8 @@ def evidence_original(evidence_id:str,db:Session=Depends(get_db),user:User=Depen
     if evidence.user_id!=user.id and not (membership and case and case.organisation_id==user.organisation_id):
         raise HTTPException(403,"Private original access denied.")
     if evidence.visibility=="deleted": raise HTTPException(410,"Evidence was removed through the governed deletion workflow.")
+    if evidence.original_path.startswith('supabase://'):
+        return Response(storage.read(evidence.original_path),media_type="application/octet-stream",headers={"Cache-Control":"no-store","Content-Disposition":"attachment"})
     return FileResponse(evidence.original_path,media_type="application/octet-stream",filename=evidence.name,headers={"Cache-Control":"no-store"})
 
 class TransitionInput(BaseModel):
@@ -656,7 +662,9 @@ def read_notification(notification_id:str,db:Session=Depends(get_db),user:User=D
 DEFAULT_PREFERENCES={"reports":True,"case_updates":True,"actions":True,"evidence_requests":True,"biodiversity":True,"digest":"immediate","quiet_start":"","quiet_end":"","timezone":"Asia/Kolkata","email":False,"push":False}
 @router.get("/preferences")
 def preferences(user:User=Depends(require_user)):
-    return {**DEFAULT_PREFERENCES,**user.preferences,"capabilities":{"email":"unavailable","push":"unavailable"}}
+    from .mail import configured
+    from .push import configured as push_configured
+    return {**DEFAULT_PREFERENCES,**user.preferences,"capabilities":{"email":"available" if configured() and user.data.get('email_verified_at') else "verify_email" if configured() else "unavailable","push":"available" if push_configured() else "unavailable"}}
 
 class PreferencesInput(BaseModel):
     reports:bool=True
@@ -674,7 +682,10 @@ class PreferencesInput(BaseModel):
 @router.put("/preferences")
 def put_preferences(body:PreferencesInput,db:Session=Depends(get_db),user:User=Depends(require_user)):
     if body.digest not in {"immediate","daily","off"}: raise HTTPException(422,"Choose immediate, daily, or off.")
-    if body.email or body.push: raise HTTPException(422,"Email and browser push adapters are unavailable.")
+    from .mail import configured
+    from .push import configured as push_configured
+    if body.push and (not push_configured() or not user.data.get('push_subscriptions')): raise HTTPException(422,"Register this browser for push before enabling the preference.")
+    if body.email and (not configured() or not user.data.get('email_verified_at')):raise HTTPException(422,'Configure transactional email and verify your account email before enabling email updates.')
     from zoneinfo import ZoneInfo,ZoneInfoNotFoundError
     try: ZoneInfo(body.timezone)
     except ZoneInfoNotFoundError: raise HTTPException(422,"Timezone is not recognised.")
@@ -682,7 +693,7 @@ def put_preferences(body:PreferencesInput,db:Session=Depends(get_db),user:User=D
         if value:
             try: datetime.strptime(value,"%H:%M")
             except ValueError: raise HTTPException(422,"Quiet hours use HH:MM.")
-    user.preferences=body.model_dump()
+    user.preferences={**user.preferences,**body.model_dump()}
     db.commit()
     return preferences(user)
 

@@ -2,20 +2,31 @@ import hashlib
 import hmac
 import os
 import secrets
+import re
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .db import get_db
-from .models import LoginSession, Membership, User, uid, utcnow
+from .models import LoginSession, Membership, User, Job, Audit, uid, utcnow
 
 router = APIRouter()
 hasher = PasswordHasher()
 COOKIE = "aquarelay_session"
 SECURE_COOKIE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
+
+def lock_usernames(db):
+    # Production accounts serialize uniqueness checks until commit on PostgreSQL.
+    if db.bind.dialect.name=='postgresql':db.execute(text("SELECT pg_advisory_xact_lock(hashtext('aquarelay:usernames'))"))
+
+def clean_username(value):
+    result=value.strip().lstrip('@').lower()
+    if not re.fullmatch(r'[a-z0-9_]{3,40}',result):raise HTTPException(422,'Username must be 3–40 letters, digits or underscores.')
+    return result
 
 def token_hash(token):
     return hashlib.sha256(token.encode()).hexdigest()
@@ -59,6 +70,7 @@ def public_user(user, csrf):
         "organisation_id": user.organisation_id,
         "username": username,
         "age": age,
+        "email_verified":bool(user.data.get('email_verified_at')),
         "csrf_token": csrf,
     }
 
@@ -110,13 +122,14 @@ class Registration(Credentials):
 @router.post("/auth/register", status_code=201)
 def register(body: Registration, request: Request, response: Response, db: Session = Depends(get_db)):
     validate_csrf(request, db)
+    lock_usernames(db)
     email = body.email.lower().strip()
     if "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(422, "Enter a valid email address.")
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "An account already uses this email address.")
     
-    username_clean = (body.username or email.split("@")[0]).strip().lstrip("@").lower()
+    username_clean = clean_username(body.username or email.split("@")[0])
     # Check username uniqueness
     all_users = db.scalars(select(User)).all()
     for u in all_users:
@@ -135,7 +148,9 @@ def register(body: Registration, request: Request, response: Response, db: Sessi
         preferences={"profile": {"name": body.name.strip(), "username": username_clean, "age": body.age}},
     )
     db.add(user)
-    db.flush()
+    try:db.flush()
+    except IntegrityError:
+        db.rollback();raise HTTPException(409,'An account already uses this email address.')
     previous = session_record(request, db)
     if previous:
         db.delete(previous)
@@ -150,7 +165,8 @@ class ProfileUpdate(BaseModel):
 @router.put("/auth/profile")
 def update_profile(body: ProfileUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
     validate_csrf(request, db)
-    username_clean = body.username.strip().lstrip("@").lower()
+    lock_usernames(db)
+    username_clean = clean_username(body.username)
     
     all_users = db.scalars(select(User).where(User.id != user.id)).all()
     for u in all_users:
@@ -197,3 +213,55 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
         db.commit()
     response.delete_cookie(COOKIE, path="/")
     return {"ok": True}
+
+class RecoveryRequest(BaseModel):
+    email:str=Field(min_length=5,max_length=254)
+
+def queue_account_email(db,user,kind):
+    from .mail import configured
+    if not configured():raise HTTPException(503,'Account email is not configured. Contact the platform administrator.')
+    previous=user.data.get(kind,{})
+    if previous.get('requested_at','')>(datetime.now(timezone.utc)-timedelta(minutes=2)).isoformat():return
+    token=user.id+'.'+secrets.token_urlsafe(40)
+    user.data={**user.data,kind:{'hash':token_hash(token),'expires_at':(datetime.now(timezone.utc)+timedelta(minutes=30)).isoformat(),'requested_at':utcnow()}}
+    base=os.environ['PUBLIC_URL'].rstrip('/')
+    db.add(Job(id=uid('job'),dedup_key='mail:'+token_hash(token),kind='email',available_at=utcnow(),data={'to':user.email,'subject':'Reset your AquaRelay password' if kind=='recovery' else 'Verify your AquaRelay email','message':'This link expires in 30 minutes.','link':base+('/account/recovery' if kind=='recovery' else '/account/verify')+'?token='+token}))
+
+@router.post('/auth/recovery',status_code=202)
+def request_recovery(body:RecoveryRequest,db:Session=Depends(get_db)):
+    from .mail import configured
+    if not configured():raise HTTPException(503,'Account email is not configured. Contact the platform administrator.')
+    user=db.scalar(select(User).where(User.email==body.email.strip().lower()))
+    if user:queue_account_email(db,user,'recovery');db.commit()
+    return {'message':'If this account exists, a recovery email will be queued.'}
+
+class ResetPassword(BaseModel):
+    token:str=Field(min_length=20,max_length=200)
+    password:str=Field(min_length=12,max_length=128)
+
+def consume_token(db,token,kind):
+    user=db.scalar(select(User).where(User.id==token.split('.',1)[0]).with_for_update())
+    record=user.data.get(kind,{}) if user else {}
+    if not record.get('hash') or record.get('expires_at','')<utcnow() or not hmac.compare_digest(record['hash'],token_hash(token)):raise HTTPException(422,'Link is invalid, expired or already used. Request a new email.')
+    user.data={k:v for k,v in user.data.items() if k!=kind}
+    return user
+
+@router.post('/auth/reset-password')
+def reset_password(body:ResetPassword,db:Session=Depends(get_db)):
+    user=consume_token(db,body.token,'recovery');user.password_hash=hasher.hash(body.password)
+    for session in db.scalars(select(LoginSession).where(LoginSession.user_id==user.id)):db.delete(session)
+    db.add(Audit(id=uid('audit'),actor_id=user.id,kind='password_recovered',target_id=user.id));db.commit()
+    return {'message':'Password updated. Sign in with your new password.'}
+
+@router.post('/auth/request-verification',status_code=202)
+def request_verification(db:Session=Depends(get_db),user:User=Depends(require_user)):
+    if not user.data.get('email_verified_at'):queue_account_email(db,user,'verification');db.commit()
+    return {'message':'Verification email queued if needed.'}
+
+class VerifyToken(BaseModel):
+    token:str=Field(min_length=20,max_length=200)
+
+@router.post('/auth/verify-email')
+def verify_email(body:VerifyToken,db:Session=Depends(get_db)):
+    user=consume_token(db,body.token,'verification');user.data={**user.data,'email_verified_at':utcnow()};db.commit()
+    return {'message':'Email verified.'}

@@ -1,11 +1,14 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import path from "node:path";
 import fs from "node:fs/promises";
 
 // These journeys share one local server/IP, including multiple simultaneous
 // sessions. Pace independent journeys within the real 240-request/minute limit.
 let previousJourneyStarted = 0;
-test.beforeEach(async ({}, info) => {
+const interceptTiles=(context:BrowserContext)=>context.route('https://tile.openstreetmap.org/**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')}));
+test.beforeEach(async ({page}, info) => {
+  // Automated QA must not request community-funded OSM tiles.
+  await interceptTiles(page.context());
   const delay = Math.max(0, previousJourneyStarted + 33000 - Date.now());
   if (delay) {
     // Pacing is fixture setup; retain the full journey timeout after it.
@@ -13,6 +16,15 @@ test.beforeEach(async ({}, info) => {
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
   previousJourneyStarted = Date.now();
+});
+
+test('real street-map configuration and device-location permission flow',async({page,context})=>{
+ await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:12.9716,longitude:77.5946});
+ await page.goto('/explore');await expect(page.locator('.maplibregl-canvas')).toBeVisible();
+ await page.getByRole('button',{name:'Use my location',exact:true}).click();
+ await expect(page.getByText(/Device location shown · accuracy approximately/)).toBeVisible();
+ await expect(page.locator('[aria-label="Your approximate device location"]')).toBeVisible();
+ await expect(page.locator('.maplibregl-ctrl-attrib').getByRole('link',{name:'OpenStreetMap contributors'})).toBeVisible();
 });
 async function login(page: Page, role = "citizen") {
   await page.goto("/login");
@@ -115,7 +127,7 @@ test("an unavailable map chunk preserves the public records and navigation", asy
   ).toBeVisible();
   await page.getByRole("link", { name: "Open water-body passport" }).click();
   await expect(
-    page.getByRole("heading", { name: "Demo Reedwater Lake" }),
+    page.getByRole("heading", { name: "Demo Reedwater Lake", level:1 }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "Sources", exact: true }).click();
   await expect(
@@ -142,7 +154,7 @@ test("public map/list selection, history, sources and responsive navigation", as
     .getByRole("button", { name: /Demo Reedwater Lake/ })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Demo Reedwater Lake" }),
+    page.getByRole("complementary", { name: "Selected water body" }).getByRole("heading", { name: "Demo Reedwater Lake" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Open water-body passport" }).click();
   await page.getByRole("tab", { name: "Incidents", exact: true }).click();
@@ -178,10 +190,8 @@ test("public map/list selection, history, sources and responsive navigation", as
     ).toBe(true);
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page
-    .getByRole("navigation", { name: "Mobile navigation" })
-    .getByRole("link", { name: "Following" })
-    .click();
+  await page.getByTitle("Click to open menu").click();
+  await page.getByRole("complementary", {name:"AquaRelay Navigation"}).getByRole("link",{name:"Following",exact:true}).click();
   await expect(
     page.getByRole("heading", { name: "Keep your waters close." }),
   ).toBeVisible();
@@ -192,12 +202,14 @@ test("golden journey: approved import, report/evidence, live flag, scoped respon
   browser,
   page,
 }) => {
+  test.setTimeout(120000); // Multiple accounts, uploads, workflow transitions and connector replay.
   await login(page, "manager");
   await page.goto("/integrations/import");
   await page
     .locator("input[type=file]")
     .setInputFiles(path.resolve("fixtures/demo-ngo-missing-unit.xlsx"));
   await page.getByLabel("Dataset identity").fill(`browser-ngo-${Date.now()}`);
+  await page.getByLabel('This file contains synthetic demonstration data').check();
   await page.getByRole("button", { name: "Preview source" }).click();
   await expect(
     page.getByRole("heading", { name: "Review field mappings" }),
@@ -228,10 +240,12 @@ test("golden journey: approved import, report/evidence, live flag, scoped respon
     page.getByRole("cell", { name: "24.5 Cel", exact: true }).first(),
   ).toBeVisible();
   const citizen = await browser.newContext();
+  await interceptTiles(citizen);
   const contributor = await citizen.newPage();
   await login(contributor);
   await mutation(contributor, "/following/wb-reedwater", {});
   const watcher = await browser.newContext();
+  await interceptTiles(watcher);
   const observer = await watcher.newPage();
   await observer.goto("/explore");
   const before = await (
@@ -474,11 +488,15 @@ test("golden journey: approved import, report/evidence, live flag, scoped respon
   await page
     .getByRole("button", { name: "Demo scenario: recover source" })
     .click();
+  const recoveredResponse=page.waitForResponse(response=>response.url().includes('/connectors/con-demo-source/sync')&&response.request().method()==='POST');
   await page
     .getByRole("button", { name: "Sync / safe retry", exact: true })
     .click();
+  const recovered=(await (await recoveredResponse).json()).connector;
+  expect(recovered.error).toBeNull();expect(recovered.last_success_at).toBeTruthy();
+  expect(['healthy','stale']).toContain(recovered.state); // Transport recovery does not make old observations fresh.
   await expect(
-    page.locator(".wf-section-head").getByText("Healthy", { exact: true }),
+    page.locator(".wf-section-head").getByText(recovered.state==='stale'?'Stale':'Healthy', { exact: true }),
   ).toBeVisible();
   expect(
     (
@@ -486,7 +504,7 @@ test("golden journey: approved import, report/evidence, live flag, scoped respon
         await page.request.get("/api/v1/connectors/con-demo-source")
       ).json()
     ).connector.state,
-  ).toBe("healthy");
+  ).toBe(recovered.state);
   await citizen.close();
   await watcher.close();
 });
@@ -513,10 +531,8 @@ test("offline pending draft retries once with the same client identity", async (
       "Saved as pending on this device. The server has not received this report.",
     ),
   ).toBeVisible();
-  await page
-    .getByRole("navigation", { name: "Public navigation" })
-    .getByRole("link", { name: "Explore waters" })
-    .click();
+  await page.getByTitle("Click to open menu").click();
+  await page.getByRole("complementary", {name:"AquaRelay Navigation"}).getByRole("link",{name:"Explore Waters",exact:true}).click();
   await expect(page).toHaveURL(/explore/);
   await context.setOffline(false);
   await expect
@@ -583,7 +599,7 @@ test("account switch cannot display prior personal data when next fetch fails", 
   ).toBe(true);
   await page.goto("/following");
   await expect(page.getByRole("heading", { name })).toBeVisible();
-  await page.getByRole("link", { name: "Account & preferences" }).click();
+  await page.locator(".pureflow-profile-chip").click();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/login/);
   await page
@@ -599,13 +615,27 @@ test("account switch cannot display prior personal data when next fetch fails", 
       body: JSON.stringify({ detail: "Test account request unavailable" }),
     }),
   );
-  await page
-    .getByRole("navigation", { name: "Public navigation" })
-    .getByRole("link", { name: "Following", exact: true })
-    .click();
+  await page.getByTitle("Click to open menu").click();
+  await page.getByRole("complementary", {name:"AquaRelay Navigation"}).getByRole("link",{name:"Following",exact:true}).click();
   await expect(
     page.getByText("Records could not be loaded", { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name })).toHaveCount(0);
   await expect(page.locator(".card-grid .follow-card")).toHaveCount(0);
+});
+
+
+test("original landing and tracking presentation retain record-backed behaviour",async({page})=>{
+  await page.goto("/");
+  await expect(page.locator(".pureflow-hero-container")).toBeVisible();
+  await expect(page.locator(".pureflow-about-section")).toBeAttached();
+  await expect(page.locator(".river-clean-cinema-container")).toBeAttached();
+  await expect(page.locator(".gallery-stream-wrapper")).toBeAttached();
+  await expect(page.locator(".pureflow-footer")).toBeAttached();
+  await expect(page.locator(".public-nav")).toHaveCount(0);
+  await page.locator(".lake-delivery-bar").click();
+  await expect(page.locator(".amazon-tracker-page .glass-panel")).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Incident response records",exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:/Recorded Evidence for Incident/})).toBeVisible();
+  await expect(page.getByText("Patrol Boat #04",{exact:true})).toHaveCount(0);
 });

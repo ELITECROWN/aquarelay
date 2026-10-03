@@ -1,5 +1,5 @@
 /* Only public application assets are cached. API responses and evidence never enter this cache. */
-const CACHE = "aquarelay-shell-v2";
+const CACHE = "aquarelay-shell-v3";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
@@ -94,4 +94,12 @@ self.addEventListener("fetch", (event) => {
         return response;
       })(),
     );
+});
+/* No private API responses or authenticated pages are cached. */
+self.addEventListener('push',event=>{
+ let data={};try{data=event.data?.json()||{};}catch{return;}
+ event.waitUntil(self.registration.showNotification(String(data.title||'AquaRelay update'),{body:String(data.body||''),tag:String(data.tag||'aquarelay'),data:{url:'/notifications'}}));
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();event.waitUntil(self.clients.openWindow(new URL('/notifications',self.location.origin).href));
 });

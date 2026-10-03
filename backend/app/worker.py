@@ -1,5 +1,9 @@
 """SQL-backed outbox consumer. Restart/replay safely resumes unfinished jobs."""
 import argparse
+import os
+import logging
+from sqlalchemy.exc import SQLAlchemyError
+from types import SimpleNamespace
 import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -48,7 +52,12 @@ def deliver_notifications(db,job):
             group.data={**group.data,"event_ids":event_ids}
             group.description=f"{len(event_ids)} recorded updates. Open the dated history to inspect the records."
         else:
-            db.add(Notification(id=uid("notification"),user_id=user.id,event_id=event.id,waterbody_id=wb.id,case_id=event.case_id,title=f"Daily updates · {wb.name}" if prefs.get("digest")=="daily" else event.title,description=event.description,available_at=available_at,data={"event_ids":[event.id],"digest_day":available_at[:10] if prefs.get("digest")=="daily" else None}))
+            notice=Notification(id=uid("notification"),user_id=user.id,event_id=event.id,waterbody_id=wb.id,case_id=event.case_id,title=f"Daily updates · {wb.name}" if prefs.get("digest")=="daily" else event.title,description=event.description,available_at=available_at,data={"event_ids":[event.id],"digest_day":available_at[:10] if prefs.get("digest")=="daily" else None})
+            db.add(notice);db.flush()
+            if prefs.get('email') and user.data.get('email_verified_at'):
+                db.add(Job(id=uid('job'),kind='notification_email',dedup_key='notification_email:'+notice.id,available_at=available_at,data={'notification_id':notice.id}))
+            if prefs.get('push') and user.data.get('push_subscriptions'):
+                db.add(Job(id=uid('job'),kind='notification_push',dedup_key='notification_push:'+notice.id,available_at=available_at,data={'notification_id':notice.id}))
 
 def process_jobs(db,limit=50):
     from .integrations import schedule_due_connectors
@@ -78,6 +87,19 @@ def process_jobs(db,limit=50):
             elif job.kind=="media_delete":
                 from .storage import storage
                 storage.delete(job.data["evidence_id"])
+            elif job.kind=='email':
+                from .mail import deliver
+                deliver(job)
+            elif job.kind=='notification_email':
+                from .mail import deliver
+                notice=db.get(Notification,job.data['notification_id'])
+                user=db.get(User,notice.user_id) if notice else None
+                if user and user.preferences.get('email') and user.preferences.get('digest')!='off' and user.data.get('email_verified_at'):
+                    deliver(SimpleNamespace(id=job.id,data={'to':user.email,'subject':notice.title,'message':notice.description,'link':os.environ['PUBLIC_URL'].rstrip('/')+'/notifications'}))
+            elif job.kind=='notification_push':
+                from .push import deliver
+                notice=db.get(Notification,job.data['notification_id']);user=db.get(User,notice.user_id) if notice else None
+                if user and user.preferences.get('push') and user.preferences.get('digest')!='off':deliver(db,user,notice,job)
             else: raise ValueError("Unsupported durable job kind")
             job.state="done"; job.completed_at=utcnow(); job.error=None
             db.commit(); processed+=1
@@ -92,7 +114,12 @@ def process_jobs(db,limit=50):
 
 def run_worker(stop=None):
     while stop is None or not stop.is_set():
-        with SessionLocal() as db: process_jobs(db)
+        try:
+            with SessionLocal() as db: process_jobs(db)
+        except SQLAlchemyError:
+            logging.getLogger('aquarelay.worker').error('Database unavailable; durable worker will retry without discarding pending jobs.')
+            if stop:stop.wait(5)
+            else:time.sleep(5)
         if stop: stop.wait(1)
         else: time.sleep(1)
 

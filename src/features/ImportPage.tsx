@@ -122,13 +122,14 @@ export default function ImportPage() {
     [units, setUnits] = useState<Record<string, string>>({}),
     [timezone, setTimezone] = useState(""),
     [waterbody, setWaterbody] = useState(""),
-    [synthetic, setSynthetic] = useState(true),
+    [synthetic, setSynthetic] = useState(false),
     [datasetLabel, setDatasetLabel] = useState("");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [accepted, setAccepted] = useState(false),
     [parameterMap, setParameterMap] = useState("{}");
   const activeStep = results ? 3 : transformed ? 2 : preview ? 1 : 0;
+  const [externalConsent,setExternalConsent]=useState(false),[mappingMode,setMappingMode]=useState('Field-name rules');
   useEffect(() => {
     if (!persisted.data) return;
     const saved = persisted.data;
@@ -481,6 +482,8 @@ export default function ImportPage() {
                 These suggestions use field-name rules. All fields remain
                 manually editable.
               </p>
+              <label className="wf-field"><span><input type="checkbox" checked={externalConsent} onChange={e=>setExternalConsent(e.target.checked)}/> Allow column names to be sent to Google Gemini. Free-tier prompts may be used to improve products. Dataset rows are excluded.</span></label>
+              <button type="button" className="wf-button secondary" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const result=await api<{mapping:Record<string,string>;assistance:string}>('/api/v1/assistance/mapping-draft',{method:'POST',body:JSON.stringify({columns:preview.columns,external_ai_consent:externalConsent})});setMapping(previous=>({...previous,...result.mapping}));setMappingMode(result.assistance);setTransformed(undefined);setAccepted(false);}catch(e){setError(errorText(e));}finally{setBusy(false);}}}>Suggest mappings for review</button><p className="wf-muted">{mappingMode}. Units, timezone and water-body identity still require your approval.</p>
               <div className="wf-table-wrap">
                 <table className="wf-table wf-mapping-table">
                   <thead>

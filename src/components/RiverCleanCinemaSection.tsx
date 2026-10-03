@@ -61,7 +61,7 @@ export default function RiverCleanCinemaSection() {
       icon: Zap,
       tag: "PHASE 3 · COMMUNITY PATROLLING",
       title: "Real-Time Watchdog Citations",
-      desc: "Every citizen report feeds GPS-verified forensics to Pollution Control Boards for instant legal accountability and immediate action.",
+      desc: "Citizen observations can be reviewed by responsible organisations and connected to documented actions.",
     },
   ];
 
@@ -80,7 +80,7 @@ export default function RiverCleanCinemaSection() {
           Restoring Living Waters<span>.</span>
         </h2>
         <p className="cinema-sub">
-          Scroll down to expand from detailed telemetry analysis into full-screen cinema theater.
+          Illustrative restoration footage, not evidence of an AquaRelay case or a deployed fleet.
         </p>
       </div>
 
