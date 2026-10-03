@@ -79,14 +79,14 @@ def test_map_includes_registry_beyond_list_page_and_actual_open_case_counts(clie
     from app.db import SessionLocal
     from app.models import WaterBody,Case
     with SessionLocal() as db:
-        db.add_all([WaterBody(id=f'map-lake-{i}',name=f'Map lake {i}',type='lake',locality='Bengaluru',latitude=12.97,longitude=77.59) for i in range(120)])
+        db.add_all([WaterBody(id=f'map-lake-{i}',name=f'Map lake {i}',type='lake',locality='Bengaluru',latitude=12.97,longitude=77.59) for i in range(2100)])
         db.flush()
         db.add_all([Case(id='map-open',waterbody_id='map-lake-110',title='Observation',description='Observed',observed_at='2026-10-03T00:00:00Z',state='investigating'),Case(id='map-closed',waterbody_id='map-lake-110',title='Previous',description='Documented',observed_at='2026-10-03T00:00:00Z',state='closed')])
         db.commit()
     response=client.get('/api/v1/waterbodies/map?q=Map lake')
     assert response.status_code==200,response.text
     result=response.json()
-    assert result['total']==120 and len(result['items'])==120
+    assert result['total']==2100 and len(result['items'])==2100
     assert next(x for x in result['items'] if x['id']=='map-lake-110')['case_count']==1
     assert result['truncated'] is False
 

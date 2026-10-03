@@ -20,13 +20,16 @@ def prepare_database():
     migrate(adopt_existing=os.getenv('ADOPT_EXISTING_SCHEMA','false').lower()=='true')
     from .bootstrap import from_environment
     from_environment()
-    if os.getenv('REGISTRY_STARTER_PATH'):
+    paths=[os.getenv('REGISTRY_STARTER_PATH',''),*os.getenv('REGISTRY_STARTER_PATHS','').split(',')]
+    paths=list(dict.fromkeys(path.strip() for path in paths if path.strip()))
+    if paths:
         import json
         from pathlib import Path
         from .osm_registry import import_registry
         from .db import SessionLocal
-        payload=json.loads(Path(os.environ['REGISTRY_STARTER_PATH']).read_text(encoding='utf-8'))
-        with SessionLocal() as db:import_registry(db,payload)
+        for path in paths:
+            payload=json.loads(Path(path).read_text(encoding='utf-8'))
+            with SessionLocal() as db:import_registry(db,payload)
 
 def main():
     validate_environment(os.environ)

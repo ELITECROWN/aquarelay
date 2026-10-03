@@ -470,7 +470,7 @@ export function ExplorePage() {
           </div>
         </section>
         <section className={`map-region ${mode === "list" ? "list-mode" : ""}`}>
-          {fullMap && mode==='map' ? <><QueryState loading={mapRegistry.isPending} error={mapRegistry.error as Error|null}/>{mapRegistry.data && <MapView items={mapRegistry.data.items} selected={selected} onSelect={setSelected}/>} {mapRegistry.data?.truncated && <p className="fine-print">Map limited to 2,000 matches. Search to narrow the results.</p>}</> : <MapView items={items} selected={selected} onSelect={setSelected} />}
+          {fullMap && mode==='map' ? <><QueryState loading={mapRegistry.isPending} error={mapRegistry.error as Error|null}/>{mapRegistry.data && <MapView items={mapRegistry.data.items} selected={selected} onSelect={setSelected}/>} {mapRegistry.data?.truncated && <p className="fine-print">Map limited to 5,000 matches. Search to narrow the results.</p>}</> : <MapView items={items} selected={selected} onSelect={setSelected} />}
           {!selected && (
             <div className="map-intro">
               <span className="small-icon">
@@ -1145,7 +1145,7 @@ export function LandingPage() {
 
   const faqs = [
     {q:"How does AquaRelay help?",a:"It connects observations, evidence, investigations and documented actions to a permanent water-body record."},
-    {q:"Where is the first registry?",a:"The launch region is Bengaluru. OpenStreetMap identities require local review and responsible organisation assignments."},
+    {q:"Which regions does the registry cover?",a:"The starter registry covers Bengaluru, Sodepur–Barrackpore in West Bengal and Potheri in Tamil Nadu. Search a region or water-body name on the map. OpenStreetMap identities require local review and responsible organisation assignments."},
     {q:"Does AquaRelay establish water safety?",a:"No. Reports record observations for investigation; qualified experts assess their cause and implications."},
     {q:"How can I contribute?",a:"Report an observation, add evidence, follow a water body or connect a permitted dataset."},
     {q:"How is recovery recorded?",a:"Organisations preserve dated action notes and supporting before/after evidence in the case history."}

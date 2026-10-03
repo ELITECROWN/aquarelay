@@ -235,7 +235,7 @@ def registry_map(q:str='',type:str='',db:Session=Depends(get_db)):
         needle=q.lower()
         statement=statement.where(or_(func.lower(WaterBody.name).contains(needle,autoescape=True),func.lower(WaterBody.locality).contains(needle,autoescape=True),func.lower(cast(WaterBody.aliases,String)).contains(needle,autoescape=True)))
     total=db.scalar(select(func.count()).select_from(statement.subquery()))
-    rows=list(db.scalars(statement.limit(2000)))
+    rows=list(db.scalars(statement.limit(5000)))
     counts=dict(db.execute(select(Case.waterbody_id,func.count()).where(Case.waterbody_id.in_([w.id for w in rows]),Case.state!='closed',or_(Case.data['merged_into'].as_string().is_(None),Case.data['merged_into'].as_string()=='')).group_by(Case.waterbody_id)).all()) if rows else {}
     keys=('id','name','type','latitude','longitude','geometry','synthetic')
     return {'items':[{**{k:getattr(w,k) for k in keys},'case_count':counts.get(w.id,0)} for w in rows],'total':total,'truncated':total>len(rows)}

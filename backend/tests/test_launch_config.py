@@ -1,3 +1,4 @@
+from test_foundation import client
 import pytest
 from app.launch import validate_environment
 
@@ -25,3 +26,20 @@ def test_startup_adoption_requires_explicit_flag(monkeypatch):
     monkeypatch.setenv('ADOPT_EXISTING_SCHEMA','true')
     prepare_database()
     assert calls==[{'adopt_existing':False},{'adopt_existing':True}]
+
+
+def test_production_startup_imports_multiple_region_snapshots(client,monkeypatch,tmp_path):
+    import json
+    import app.migrate,app.bootstrap,app.osm_registry
+    from app.launch import prepare_database
+    monkeypatch.setattr(app.migrate,'migrate',lambda **kwargs:None)
+    monkeypatch.setattr(app.bootstrap,'from_environment',lambda:None)
+    imported=[]
+    monkeypatch.setattr(app.osm_registry,'import_registry',lambda db,payload:imported.append(payload['aquarelay_registry']['region']))
+    paths=[]
+    for region in ['sodepur-barrackpore','potheri']:
+        path=tmp_path/(region+'.json');path.write_text(json.dumps({'aquarelay_registry':{'region':region},'elements':[]}));paths.append(str(path))
+    monkeypatch.delenv('REGISTRY_STARTER_PATH',raising=False)
+    monkeypatch.setenv('REGISTRY_STARTER_PATHS',','.join(paths))
+    prepare_database()
+    assert imported==['sodepur-barrackpore','potheri']
