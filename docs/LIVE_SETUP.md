@@ -8,7 +8,7 @@ Launch region: Bengaluru. Existing accounts: GitHub and Render. The implementati
 
 1. Create a **free Supabase project**, preferably in a nearby region. Save its database password privately. In Database → Extensions enable PostGIS. In Storage create a bucket named `evidence` and keep it **private**. Do not add anonymous read/write policies. AquaRelay serves authorised media through its backend.
 2. Open Supabase's Connect dialog. Choose the **session pooler, port 5432**, which supports IPv4. Copy its PostgreSQL URI into Render's `DATABASE_URL`, URL-encode special characters in the password, and add `?sslmode=require`. Do not use the transaction pooler for this deployment's migrations and long-lived sessions. See [connection options](https://supabase.com/docs/guides/database/connecting-to-postgres).
-3. Get the project URL and server service-role key from Supabase settings. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Render only. The key bypasses storage policies; it must never be placed in browser variables, GitHub or chat.
+3. Get the project URL and server service-role key from Supabase settings. Set `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in Render only. The key bypasses storage policies; it must never be placed in browser variables, GitHub or chat.
 4. Put this code in your GitHub repository. In Render choose **New → Blueprint** and select that repository. The root `render.yaml` defines the free service, build, start and health-check commands. Render service name availability may change the assigned URL.
 5. Fill the secret fields requested by the blueprint. Set `PUBLIC_URL` and `CORS_ORIGINS` to the exact HTTPS URL Render assigns, without a trailing slash. Review `.env.production.example` for the complete environment list. `DEMO_MODE=false`, `COOKIE_SECURE=true` and shared storage are required by production startup.
 6. Before first startup, add `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME` and a unique `BOOTSTRAP_ADMIN_PASSWORD` of at least 14 characters. Startup creates the first administrator without synthetic records. After successful creation, **remove the bootstrap password and other bootstrap variables**. The free Render service does not provide an interactive shell, so this temporary environment setup avoids requiring a paid plan.
@@ -21,7 +21,7 @@ Launch region: Bengaluru. Existing accounts: GitHub and Render. The implementati
 
 | Capability | Free option | Values needed | What is still required |
 |---|---|---|---|
-| Database and media | [Supabase](https://supabase.com/pricing) free plan | `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Project creation, private bucket, PostGIS, restore test; quotas apply |
+| Database and media | [Supabase](https://supabase.com/pricing) free plan | `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Project creation, private bucket, PostGIS, restore test; quotas apply |
 | HTTPS hosting | Your [Render](https://render.com/docs/free) account | GitHub repository connection, exact public URL | Deployment and logs; free compute sleeps |
 | Street map and device location | OpenStreetMap raster map and browser Geolocation | No API key | HTTPS or localhost; user grants location permission |
 | Starter water-body identities | OSM Overpass snapshot | No API key | Successful snapshot fetch and review of mapped identities |

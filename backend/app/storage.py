@@ -35,12 +35,17 @@ class LocalStorage:
 class SupabaseStorage:
     """Both originals and derivatives stay in a PRIVATE bucket; API enforces access."""
     def __init__(self,url,key,bucket,transport=None):
+        if not key or key.startswith('sb_publishable_'):
+            raise ValueError('Private storage requires a server secret key')
         parsed=urlsplit(url)
         if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.query:
             raise ValueError('Supabase URL must be an HTTPS project URL')
         if not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}',bucket): raise ValueError('Invalid bucket')
         self.url=url.rstrip('/');self.bucket=bucket
-        self.client=httpx.Client(timeout=30,transport=transport,headers={'Authorization':'Bearer '+key,'apikey':key})
+        headers={'apikey':key}
+        if not key.startswith('sb_secret_'):
+            headers['Authorization']='Bearer '+key
+        self.client=httpx.Client(timeout=30,transport=transport,headers=headers)
 
     def request(self,method,key,**kwargs):
         try:
@@ -71,7 +76,7 @@ class SupabaseStorage:
             response.raise_for_status()
         except httpx.HTTPError: raise HTTPException(503,'Persistent media deletion is unavailable. Retry later.')
 
-storage=SupabaseStorage(os.environ['SUPABASE_URL'],os.environ['SUPABASE_SERVICE_ROLE_KEY'],os.getenv('SUPABASE_STORAGE_BUCKET','evidence')) if os.getenv('STORAGE_BACKEND')=='supabase' else LocalStorage()
+storage=SupabaseStorage(os.environ['SUPABASE_URL'],os.getenv('SUPABASE_SECRET_KEY') or os.getenv('SUPABASE_SERVICE_ROLE_KEY',''),os.getenv('SUPABASE_STORAGE_BUCKET','evidence')) if os.getenv('STORAGE_BACKEND')=='supabase' else LocalStorage()
 
 def sanitise_video(content):
     if len(content)<12 or content[4:8]!=b"ftyp":

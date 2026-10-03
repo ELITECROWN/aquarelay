@@ -7,8 +7,10 @@ def validate_environment(env):
     if env.get('DEMO_MODE','true').lower()!='false':errors.append('DEMO_MODE must be false')
     if not env.get('DATABASE_URL','').startswith(('postgresql://','postgresql+psycopg://')):errors.append('Persistent PostgreSQL DATABASE_URL required')
     if env.get('STORAGE_BACKEND')!='supabase':errors.append('STORAGE_BACKEND must be supabase on ephemeral hosting')
-    for name in ('SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','PUBLIC_URL','CORS_ORIGINS'):
+    for name in ('SUPABASE_URL','PUBLIC_URL','CORS_ORIGINS'):
         if not env.get(name):errors.append(name+' required')
+    key=env.get('SUPABASE_SECRET_KEY') or env.get('SUPABASE_SERVICE_ROLE_KEY','')
+    if not key or key.startswith('sb_publishable_'):errors.append('SUPABASE_SECRET_KEY server key required')
     if env.get('COOKIE_SECURE','true').lower()=='false':errors.append('Secure cookies required')
     if not env.get('PUBLIC_URL','').startswith('https://'):errors.append('PUBLIC_URL must use HTTPS')
     if errors:raise ValueError('; '.join(errors))

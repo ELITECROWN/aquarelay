@@ -1,6 +1,20 @@
 import httpx
 import pytest
 
+def test_modern_secret_key_uses_apikey_without_invalid_bearer():
+    from app.storage import SupabaseStorage
+    def handle(request):
+        assert request.headers['apikey']=='sb_secret_test_backend_key'
+        assert 'authorization' not in request.headers
+        return httpx.Response(200,content=b'clean')
+    storage=SupabaseStorage('https://test.supabase.co','sb_secret_test_backend_key','evidence',transport=httpx.MockTransport(handle))
+    assert storage.read('supabase://evidence/public/evidence-1.jpg')==b'clean'
+
+def test_publishable_key_cannot_configure_private_storage():
+    from app.storage import SupabaseStorage
+    with pytest.raises(ValueError,match='server'):
+        SupabaseStorage('https://test.supabase.co','sb_publishable_test','evidence')
+
 def test_cloud_storage_uses_private_bucket_and_round_trips():
     from app.storage import SupabaseStorage
     objects={}
