@@ -226,6 +226,20 @@ def waterbodies(q: str = "", type: str = "", state: str = "", availability: str 
         items.sort(key=lambda i:i["distance_m"])
     return {"items":items[(page-1)*page_size:page*page_size],"total":len(items),"page":page,"page_size":page_size}
 
+@router.get('/waterbodies/map')
+def registry_map(q:str='',type:str='',db:Session=Depends(get_db)):
+    statement=select(WaterBody).order_by(WaterBody.name,WaterBody.id)
+    if not DEMO_MODE:statement=statement.where(WaterBody.synthetic.is_(False))
+    if type:statement=statement.where(WaterBody.type==type)
+    if q:
+        needle=q.lower()
+        statement=statement.where(or_(func.lower(WaterBody.name).contains(needle,autoescape=True),func.lower(WaterBody.locality).contains(needle,autoescape=True),func.lower(cast(WaterBody.aliases,String)).contains(needle,autoescape=True)))
+    total=db.scalar(select(func.count()).select_from(statement.subquery()))
+    rows=list(db.scalars(statement.limit(2000)))
+    counts=dict(db.execute(select(Case.waterbody_id,func.count()).where(Case.waterbody_id.in_([w.id for w in rows]),Case.state!='closed',or_(Case.data['merged_into'].as_string().is_(None),Case.data['merged_into'].as_string()=='')).group_by(Case.waterbody_id)).all()) if rows else {}
+    keys=('id','name','type','latitude','longitude','geometry','synthetic')
+    return {'items':[{**{k:getattr(w,k) for k in keys},'case_count':counts.get(w.id,0)} for w in rows],'total':total,'truncated':total>len(rows)}
+
 @router.get("/waterbodies/{waterbody_id}")
 def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = Depends(get_db)):
     wb=get_record(db,WaterBody,waterbody_id)
@@ -616,7 +630,12 @@ def workspace(db:Session=Depends(get_db),user:User=Depends(require_manager)):
 @router.get("/following")
 def following(db:Session=Depends(get_db),user:User=Depends(require_user)):
     subscriptions=list(db.scalars(select(Subscription).where(Subscription.user_id==user.id)))
-    return {"waterbodies":[waterbody_json(db,db.get(WaterBody,s.waterbody_id)) for s in subscriptions if s.waterbody_id],"areas":[{"id":s.id,"name":s.name,"latitude":s.latitude,"longitude":s.longitude,"radius_m":s.radius_m,"created_at":s.created_at} for s in subscriptions if not s.waterbody_id]}
+    visible_waterbodies=[]
+    for subscription in subscriptions:
+        if subscription.waterbody_id:
+            wb=db.get(WaterBody,subscription.waterbody_id)
+            if wb:visible_waterbodies.append(waterbody_json(db,wb))
+    return {"waterbodies":visible_waterbodies,"areas":[{"id":s.id,"name":s.name,"latitude":s.latitude,"longitude":s.longitude,"radius_m":s.radius_m,"created_at":s.created_at} for s in subscriptions if not s.waterbody_id]}
 
 @router.post("/following/{waterbody_id}")
 def follow(waterbody_id:str,db:Session=Depends(get_db),user:User=Depends(require_user)):

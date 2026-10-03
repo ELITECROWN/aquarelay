@@ -73,3 +73,32 @@ def test_production_excludes_synthetic_children_from_real_passport(client, monke
     result=client.get('/api/v1/waterbodies/wb-real').json()
     assert result['sources']==[]
     assert result['observations']==[]
+
+
+def test_map_includes_registry_beyond_list_page_and_actual_open_case_counts(client):
+    from app.db import SessionLocal
+    from app.models import WaterBody,Case
+    with SessionLocal() as db:
+        db.add_all([WaterBody(id=f'map-lake-{i}',name=f'Map lake {i}',type='lake',locality='Bengaluru',latitude=12.97,longitude=77.59) for i in range(120)])
+        db.flush()
+        db.add_all([Case(id='map-open',waterbody_id='map-lake-110',title='Observation',description='Observed',observed_at='2026-10-03T00:00:00Z',state='investigating'),Case(id='map-closed',waterbody_id='map-lake-110',title='Previous',description='Documented',observed_at='2026-10-03T00:00:00Z',state='closed')])
+        db.commit()
+    response=client.get('/api/v1/waterbodies/map?q=Map lake')
+    assert response.status_code==200,response.text
+    result=response.json()
+    assert result['total']==120 and len(result['items'])==120
+    assert next(x for x in result['items'] if x['id']=='map-lake-110')['case_count']==1
+    assert result['truncated'] is False
+
+
+def test_real_account_following_demo_before_launch_does_not_fail_after_launch(client,monkeypatch):
+    from app import core
+    csrf=client.get('/api/v1/auth/session').json()['csrf_token']
+    result=client.post('/api/v1/auth/register',json={'email':'follower@example.org','name':'Real Follower','password':'ARealStrongPassword123!'},headers={'X-CSRF-Token':csrf})
+    headers={'X-CSRF-Token':result.json()['csrf_token']}
+    assert client.post('/api/v1/following/wb-reedwater',headers=headers).status_code==200
+    monkeypatch.setenv('DEMO_MODE','false')
+    monkeypatch.setattr(core,'DEMO_MODE',False)
+    response=client.get('/api/v1/following')
+    assert response.status_code==200
+    assert response.json()['waterbodies']==[]
