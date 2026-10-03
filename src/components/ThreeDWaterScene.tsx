@@ -14,7 +14,7 @@ export default function ThreeDWaterScene({
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050505, 0.032);
+    scene.fog = new THREE.FogExp2(0xffffff, 0.038);
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -36,15 +36,15 @@ export default function ThreeDWaterScene({
     renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
 
-    // 2. Lighting (Deep dark waters with multi-color caustics: cyan, yellow & crimson)
-    const ambientLight = new THREE.AmbientLight(0x18181b, 2.2);
+    // 2. Lighting (Daylight clean water with subtle crimson/red reflection)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x38bdf8, 2.4);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
     dirLight.position.set(8, 12, 10);
     scene.add(dirLight);
 
-    const secondaryLight = new THREE.PointLight(0xeab308, 3.5, 35);
+    const secondaryLight = new THREE.PointLight(0xef4444, 2.2, 35);
     secondaryLight.position.set(-6, 4, 4);
     scene.add(secondaryLight);
 
@@ -52,8 +52,8 @@ export default function ThreeDWaterScene({
     const widthSegments = 90;
     const heightSegments = 90;
     const waterGeometry = new THREE.PlaneGeometry(
-      28,
-      28,
+      60,
+      60,
       widthSegments,
       heightSegments
     );
@@ -64,37 +64,37 @@ export default function ThreeDWaterScene({
     const initialPositions = posAttribute.array.slice();
 
     const waterMaterial = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color("#09090b"),
-      emissive: new THREE.Color("#0369a1"),
-      emissiveIntensity: 0.18,
-      roughness: 0.08,
-      metalness: 0.15,
-      transmission: 0.92,
+      color: new THREE.Color("#ffffff"),
+      emissive: new THREE.Color("#fff1f2"),
+      emissiveIntensity: 0.04,
+      roughness: 0.06,
+      metalness: 0.0,
+      transmission: 0.98,
       ior: 1.333,
       transparent: true,
-      opacity: 0.62,
-      reflectivity: 0.9,
+      opacity: 0.28,
+      reflectivity: 0.85,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.04,
+      clearcoatRoughness: 0.02,
       wireframe: false,
     });
 
     const waterMesh = new THREE.Mesh(waterGeometry, waterMaterial);
-    waterMesh.position.set(0, -1.8, 0);
+    waterMesh.position.set(0, -2.2, 0);
     scene.add(waterMesh);
 
     // 4. Floating 3D Transparent Crystal Water Droplets
     const bubbles: THREE.Mesh[] = [];
     const bubbleGeo = new THREE.SphereGeometry(0.35, 32, 32);
     const bubbleMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color("#38bdf8"),
-      emissive: new THREE.Color("#0284c7"),
-      emissiveIntensity: 0.25,
-      roughness: 0.02,
+      color: new THREE.Color("#fee2e2"),
+      emissive: new THREE.Color("#fca5a5"),
+      emissiveIntensity: 0.2,
+      roughness: 0.05,
       transmission: 0.96,
       thickness: 0.4,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.22,
       ior: 1.333,
     });
 

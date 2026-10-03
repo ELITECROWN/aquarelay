@@ -12,7 +12,7 @@ export default function LakeDeliveryBar() {
         <div className="delivery-bar-left">
           <div className="amazon-delivery-status-pill">
             <span className="amazon-live-dot" />
-            <Truck size={14} className="text-emerald-600" />
+            <Truck size={14} style={{ color: "#ef4444" }} />
             <span>Out for delivery</span>
           </div>
           <span className="delivery-bar-divider" />

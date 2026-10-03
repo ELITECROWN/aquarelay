@@ -282,7 +282,7 @@ export default function LakeWatchdogHub() {
           {/* Simulated Sensor Telemetry */}
           <div className="telemetry-banner">
             <span className="telemetry-title">
-              <Sparkles size={14} /> AI SENSOR TELEMETRY PREDICTION
+              <Sparkles size={14} style={{ color: "#ef4444" }} /> REAL-TIME SENSOR TELEMETRY ANALYSIS
             </span>
             <div className="telemetry-stats">
               <div className="telemetry-stat">
@@ -311,9 +311,9 @@ export default function LakeWatchdogHub() {
               <div className="data-packet" />
             </div>
 
-            <div className="pipeline-node node-ai">
+            <div className="pipeline-node node-triage">
               <div className="node-icon">⚡</div>
-              <span>AI Triage</span>
+              <span>Rapid Triage</span>
             </div>
 
             <div className={`pipeline-track ${isTransmitting ? "animating" : dispatchedTicket ? "active" : ""}`}>

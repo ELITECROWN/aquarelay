@@ -1107,8 +1107,9 @@ export function LandingPage() {
               alignItems: "center",
               justifyContent: "center",
               borderRadius: "8px",
-              border: "1px solid rgba(116, 196, 118, 0.35)",
-              background: "rgba(255, 255, 255, 0.7)",
+              border: "1px solid #fecaca",
+              background: "#ffffff",
+              color: "#1f2937",
             }}
           >
             <Bell size={18} />
@@ -1119,23 +1120,37 @@ export function LandingPage() {
                 right: "7px",
                 width: "7px",
                 height: "7px",
-                backgroundColor: "#74C476",
+                backgroundColor: "#ef4444",
                 borderRadius: "50%",
-                boxShadow: "0 0 6px #74C476",
+                boxShadow: "0 0 6px #ef4444",
               }}
             />
           </Link>
           <Link
             className="button primary"
             to="/report"
-            style={{ minHeight: "38px", padding: "8px 16px", fontSize: "12px" }}
+            style={{
+              minHeight: "38px",
+              padding: "8px 16px",
+              fontSize: "12px",
+              background: "#ef4444",
+              borderColor: "#dc2626",
+              color: "#ffffff",
+            }}
           >
             <Plus size={15} /> Report Lake Anomaly
           </Link>
           <Link
             className="button secondary"
             to="/login"
-            style={{ minHeight: "38px", padding: "8px 14px", fontSize: "12px" }}
+            style={{
+              minHeight: "38px",
+              padding: "8px 14px",
+              fontSize: "12px",
+              background: "#ffffff",
+              borderColor: "#e5e7eb",
+              color: "#1f2937",
+            }}
           >
             Sign in
             <ArrowUpRight size={15} />
@@ -1158,23 +1173,23 @@ export function LandingPage() {
               <Link
                 className="button primary"
                 to="/report"
-                style={{ fontSize: "14px", padding: "12px 24px" }}
+                style={{ fontSize: "14px", padding: "12px 24px", background: "#ef4444", borderColor: "#dc2626", color: "#ffffff" }}
               >
                 Report suspicious activity <Plus size={18} />
               </Link>
               <Link
                 className="button secondary"
                 to="/dispatch-tracker"
-                style={{ fontSize: "14px", padding: "12px 22px" }}
+                style={{ fontSize: "14px", padding: "12px 22px", background: "#ffffff", borderColor: "#e5e7eb", color: "#1f2937" }}
               >
-                Track <Zap size={16} />
+                Track <Zap size={16} style={{ color: "#ef4444" }} />
               </Link>
               <Link
                 className="button secondary"
                 to="/explore"
-                style={{ fontSize: "14px", padding: "12px 22px" }}
+                style={{ fontSize: "14px", padding: "12px 22px", background: "#ffffff", borderColor: "#e5e7eb", color: "#1f2937" }}
               >
-                Explore water map <ArrowRight size={17} />
+                Explore water map <ArrowRight size={17} style={{ color: "#ef4444" }} />
               </Link>
             </div>
           </div>
@@ -1188,7 +1203,7 @@ export function LandingPage() {
 
         <section className="landing-story">
           <div>
-            <p className="eyebrow">AUTOMATED CITIZEN-TO-AUTHORITY LIFECYCLE</p>
+            <p className="eyebrow" style={{ color: "#ef4444", fontWeight: 700 }}>CITIZEN-TO-AUTHORITY LIFECYCLE</p>
             <h2>
               From citizen alert
               <br />
@@ -1208,13 +1223,13 @@ export function LandingPage() {
               },
               {
                 icon: Zap,
-                color: "#facc15",
-                title: "AI Contamination Triage.",
-                text: "Automated analysis cross-references historical water data, satellite indices, and sensory indicators to calculate threat scores.",
+                color: "#dc2626",
+                title: "Rapid Verification & Triage.",
+                text: "Telemetry cross-references citizen reports, historical water records, and sensory indicators to calculate response priority.",
               },
               {
                 icon: Database,
-                color: "#10b981",
+                color: "#b91c1c",
                 title: "Automated Authority Dispatch.",
                 text: "Instantly routes signed incident notices to State Pollution Control Boards and Municipal Water Bureaus with documented SLAs.",
               },

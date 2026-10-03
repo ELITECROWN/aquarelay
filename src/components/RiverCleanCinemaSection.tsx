@@ -73,7 +73,7 @@ export default function RiverCleanCinemaSection() {
     >
       <div className="cinema-header-strip">
         <div className="cinema-eyebrow">
-          <Waves size={16} className="text-cyan-600 animate-pulse" />
+          <Waves size={16} style={{ color: "#ef4444" }} className="animate-pulse" />
           <span>CINEMATIC RIVER CLEANING & RESTORATION IN ACTION</span>
         </div>
         <h2 className="cinema-heading">
@@ -147,11 +147,19 @@ export default function RiverCleanCinemaSection() {
           </div>
 
           <div className="clean-action-row">
-            <Link to="/report" className="button primary" style={{ fontSize: "13px", padding: "10px 18px" }}>
+            <Link
+              to="/report"
+              className="button primary"
+              style={{ fontSize: "13px", padding: "10px 18px", background: "#ef4444", borderColor: "#dc2626", color: "#ffffff" }}
+            >
               Report River Waste Influx <ArrowRight size={14} />
             </Link>
-            <Link to="/explore" className="button secondary" style={{ fontSize: "13px", padding: "10px 16px" }}>
-              <Compass size={14} /> Catchment Cleanliness Index
+            <Link
+              to="/explore"
+              className="button secondary"
+              style={{ fontSize: "13px", padding: "10px 16px", background: "#ffffff", borderColor: "#e5e7eb", color: "#1f2937" }}
+            >
+              <Compass size={14} style={{ color: "#ef4444" }} /> Catchment Cleanliness Index
             </Link>
           </div>
         </div>

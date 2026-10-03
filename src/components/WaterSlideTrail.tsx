@@ -37,11 +37,11 @@ export default function WaterSlideTrail() {
     let isDown = false;
 
     const waterColors = [
-      "rgba(56, 189, 248,",  // sky blue
-      "rgba(14, 165, 233,",  // ocean blue
-      "rgba(6, 182, 212,",   // bright cyan
-      "rgba(186, 230, 253,", // light azure
-      "rgba(2, 132, 199,",   // deep water
+      "rgba(239, 68, 68,",   // vivid red
+      "rgba(220, 38, 38,",   // crimson red
+      "rgba(244, 63, 94,",   // rose red
+      "rgba(251, 113, 133,", // soft coral
+      "rgba(185, 28, 28,",   // deep ruby
     ];
 
     // Mouse slide watery splash emission (transparent & fluid)

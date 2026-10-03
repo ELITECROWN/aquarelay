@@ -41,12 +41,12 @@ const DEFAULT_STEPS: TrackingStep[] = [
   },
   {
     id: "step-2",
-    title: "AI Water Contamination Triage",
+    title: "Water Contamination Triage & Analysis",
     subtitle: "Dissolved Oxygen 1.4 mg/L · Toxic Chemical Foam Detected",
     time: "10:25 PM",
     status: "completed",
     iconText: "⚡",
-    accentColor: "#06b6d4", // Electric Cyan
+    accentColor: "#ef4444", // Active Red
     badge: "LEVEL 4 SEVERITY",
   },
   {
@@ -66,7 +66,7 @@ const DEFAULT_STEPS: TrackingStep[] = [
     time: "LIVE (ETA 8 mins)",
     status: "current",
     iconText: "🚤",
-    accentColor: "#3b82f6", // Electric Royal Blue
+    accentColor: "#dc2626", // Crimson Red
     badge: "DISPATCH IN TRANSIT",
   },
   {
@@ -190,7 +190,7 @@ export default function LakeDeliveryTracker() {
               <span className="boat-icon animate-bounce">🚤</span> Patrol Boat Moving across Catchment
             </span>
             <span>
-              <ShieldAlert size={14} className="text-blue-400" /> State Authority Command
+              <ShieldAlert size={14} style={{ color: "#ef4444" }} /> State Authority Command
             </span>
           </div>
 
