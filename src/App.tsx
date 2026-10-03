@@ -147,21 +147,18 @@ export default function App() {
       }
       refresh();
     };
-    const isStaticDeployment = window.location.hostname.includes("vercel.app");
-    if (!isStaticDeployment) {
-      try {
-        stream = new EventSource(`/api/v1/events/stream?after=${cursor}`, {
-          withCredentials: true,
-        });
-        stream.onmessage = onUpdate;
-        stream.addEventListener("update", onUpdate);
-        stream.onerror = () => {
-          try {
-            stream?.close();
-          } catch {}
-        };
-      } catch {}
-    }
+    try {
+      stream = new EventSource(`/api/v1/events/stream?after=${cursor}`, {
+        withCredentials: true,
+      });
+      stream.onmessage = onUpdate;
+      stream.addEventListener("update", onUpdate);
+      stream.onerror = () => {
+        try {
+          stream?.close();
+        } catch {}
+      };
+    } catch {}
     const timer = window.setInterval(refresh, 30000);
     return () => {
       disposed = true;
