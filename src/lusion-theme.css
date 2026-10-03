@@ -3848,3 +3848,124 @@ body:has(.pureflow-page-root),
   }
 }
 
+/* Ground Zero 3D Action Stream Section (PureFlow Theme) */
+.pureflow-gallery-corridor-section {
+  padding: 100px 0 80px;
+  background: #fbf9f5;
+  border-top: 1px solid #e7e5e4;
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.gallery-section-sub {
+  max-width: 500px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: #57534e;
+  margin: 0;
+}
+
+.gallery-stream-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.gallery-stream-card {
+  height: 600px;
+  width: 100%;
+  border-radius: 28px;
+  border: 1px solid #e7e5e4;
+  background: linear-gradient(180deg, #f5f2ea 0%, #ebe7dc 100%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(245, 158, 11, 0.15);
+  position: relative;
+}
+
+.gallery-stream-overlay-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 36px 24px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.gallery-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #1c1917;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
+}
+
+.gallery-center-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 580px;
+  margin: auto;
+  pointer-events: auto;
+}
+
+.gallery-hero-text {
+  font-size: clamp(32px, 4.2vw, 54px);
+  font-weight: 850;
+  color: #1c1917;
+  line-height: 1.15;
+  letter-spacing: -1.2px;
+  margin: 0;
+  text-shadow: 0 2px 14px rgba(255, 255, 255, 0.85);
+}
+
+.gallery-hero-sub {
+  font-size: 15px;
+  color: #44403c;
+  line-height: 1.5;
+  margin: 0 0 10px 0;
+  font-weight: 550;
+  text-shadow: 0 1px 6px rgba(255, 255, 255, 0.7);
+}
+
+.gallery-cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 30px;
+  background: #f59e0b;
+  color: #000000;
+  font-weight: 800;
+  font-size: 14.5px;
+  border-radius: 9999px;
+  text-decoration: none;
+  box-shadow: 0 8px 26px rgba(245, 158, 11, 0.4);
+  transition: all 0.25s ease;
+}
+
+.gallery-cta-pill:hover {
+  background: #fbbf24;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.55);
+}
+
