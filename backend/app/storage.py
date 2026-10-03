@@ -72,7 +72,7 @@ class SupabaseStorage:
     def delete(self,evidence_id):
         if not re.fullmatch(r'[a-zA-Z0-9-]{1,80}',evidence_id): raise ValueError('Invalid storage identity')
         try:
-            response=self.client.delete(self.url+'/storage/v1/object/'+self.bucket,json={'prefixes':['private/'+evidence_id+'.bin','public/'+evidence_id+'.jpg','public/'+evidence_id+'.mp4']})
+            response=self.client.request('DELETE',self.url+'/storage/v1/object/'+self.bucket,json={'prefixes':['private/'+evidence_id+'.bin','public/'+evidence_id+'.jpg','public/'+evidence_id+'.mp4']})
             response.raise_for_status()
         except httpx.HTTPError: raise HTTPException(503,'Persistent media deletion is unavailable. Retry later.')
 

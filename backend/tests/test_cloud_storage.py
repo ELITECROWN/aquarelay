@@ -29,6 +29,7 @@ def test_cloud_storage_uses_private_bucket_and_round_trips():
     assert original.startswith('supabase://evidence/private/')
     assert storage.read(public)==b'clean'
     assert storage.read(original)==b'private'
+    storage.delete('evidence-1')
     with pytest.raises(ValueError):storage.read('supabase://other/private/a.bin')
     with pytest.raises(ValueError):storage.save('../bad',b'x',b'y','.jpg')
 
