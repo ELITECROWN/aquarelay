@@ -8,3 +8,5 @@ playwright-report
 pytest-cache-files-*
 aquarelay-tests-*
 *.sqlite*
+*.mp4
+public/videos
