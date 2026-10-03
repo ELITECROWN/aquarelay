@@ -121,6 +121,7 @@ import LakeDeliveryBar from "./components/LakeDeliveryBar";
 import RiverCleanCinemaSection from "./components/RiverCleanCinemaSection";
 import PureFlowHeroVideo from "./components/PureFlowHeroVideo";
 import { openSideMenuDrawer } from "./components/SideMenuDrawer";
+import PureFlowScrollGallery from "./components/PureFlowScrollGallery";
 import { ImageStreamHero } from "./components/ui/image-stream-hero";
 
 const GALLERY_STREAM_IMAGES = [
@@ -1253,52 +1254,8 @@ export function LandingPage() {
       {/* 5. River Clean Cinema (High-Impact Cleanup Machines Theater) */}
       <RiverCleanCinemaSection />
 
-      {/* 5b. Ground Zero Action Stream (3D Image Stream Hero Corridor) */}
-      <section className="pureflow-gallery-corridor-section">
-        <div className="pureflow-container">
-          <div className="gallery-section-header">
-            <div>
-              <span className="pureflow-section-tag">
-                <span className="pureflow-dot-amber" /> GROUND ZERO FORENSICS & RECOVERY
-              </span>
-              <h2 className="pureflow-heading-mid">
-                Living Proof of Clean Waters in Motion.
-              </h2>
-            </div>
-            <p className="gallery-section-sub">
-              From volunteer dredging crews to sunset plastic bottle recoveries and shallow-water bamboo clearing, see frontline citizen action restoring our fragile catchments.
-            </p>
-          </div>
-
-          <div className="gallery-stream-wrapper">
-            <ImageStreamHero
-              images={GALLERY_STREAM_IMAGES}
-              cards={10}
-              speed={16}
-              axis={50}
-              className="gallery-stream-card"
-            >
-              <div className="gallery-stream-overlay-content">
-                <div className="gallery-stat-pill">
-                  <span className="live-amber-dot" />
-                  <span>24,800+ Kgs of River Debris Recovered This Month</span>
-                </div>
-                <div className="gallery-center-copy">
-                  <h3 className="gallery-hero-text">
-                    Every Bag Collected.<br />Every Lake Restored.
-                  </h3>
-                  <p className="gallery-hero-sub">
-                    Watch the live 3D corridor of community squads and cleanup technology in the field.
-                  </p>
-                  <Link to="/report" className="gallery-cta-pill">
-                    Report a Polluted Site <ArrowRight size={15} />
-                  </Link>
-                </div>
-              </div>
-            </ImageStreamHero>
-          </div>
-        </div>
-      </section>
+      {/* 5b. Ground Zero Full-Screen Scroll-Driven Interactive Gallery */}
+      <PureFlowScrollGallery />
 
       {/* 6. PureFlow Impact & Accordion FAQ (matching right-middle of image) */}
       <section className="pureflow-impact-faq-section">
