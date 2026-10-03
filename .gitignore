@@ -15,5 +15,4 @@ aquarelay-tests-*/
 pytest-cache-files-*/
 
 .vercel
-*.mp4
-
+YTDown*.mp4

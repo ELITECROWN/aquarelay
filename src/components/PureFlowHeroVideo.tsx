@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, ArrowRight, Zap, Shield, Waves, Play, VolumeX, Volume2, Compass } from "lucide-react";
+import { Waves, VolumeX, Volume2 } from "lucide-react";
 import { openSideMenuDrawer } from "./SideMenuDrawer";
 
 export default function PureFlowHeroVideo() {
@@ -9,6 +9,23 @@ export default function PureFlowHeroVideo() {
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+
+  // Maintain precise 0.00s to 10.00s video loop
+  useEffect(() => {
+    let animId: number;
+    const checkTime = () => {
+      const vid = videoRef.current;
+      if (vid) {
+        // When reaching 10.0 seconds, loop back to 0.0
+        if (vid.currentTime >= 10.0 || vid.currentTime < 0) {
+          vid.currentTime = 0;
+        }
+      }
+      animId = requestAnimationFrame(checkTime);
+    };
+    animId = requestAnimationFrame(checkTime);
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
   // Subtle 3D mouse parallax
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -47,14 +64,23 @@ export default function PureFlowHeroVideo() {
             loop
             muted={isMuted}
             playsInline
+            onTimeUpdate={(e) => {
+              if (e.currentTarget.currentTime >= 10.0) {
+                e.currentTarget.currentTime = 0;
+              }
+            }}
+            onEnded={(e) => {
+              e.currentTarget.currentTime = 0;
+              e.currentTarget.play().catch(() => {});
+            }}
             onError={() => setVideoFailed(true)}
             className="pureflow-bg-video"
-            src="/videos/cleanup-machines.mp4"
+            src="/videos/cleanup-machines.mp4#t=0,10"
           />
         ) : (
           <iframe
             className="pureflow-bg-video youtube-fallback"
-            src="https://www.youtube-nocookie.com/embed/XWcHTmvIaPA?autoplay=1&mute=1&loop=1&playlist=XWcHTmvIaPA&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1"
+            src="https://www.youtube-nocookie.com/embed/XWcHTmvIaPA?autoplay=1&mute=1&loop=1&playlist=XWcHTmvIaPA&start=0&end=10&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1"
             title="Ocean and River Cleanup Machines in Action"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           />
@@ -107,29 +133,6 @@ export default function PureFlowHeroVideo() {
           <p className="pureflow-hero-sub">
             When citizens, volunteers, and automated cleanup machines unite, our lakes and rivers regain life, clarity, and safety.
           </p>
-
-          <div className="pureflow-cta-row">
-            <Link to="/report" className="pureflow-btn-amber">
-              Report Anomaly <Plus size={18} />
-            </Link>
-            <Link to="/dispatch-tracker" className="pureflow-btn-glass">
-              <Zap size={16} /> Track Dispatches
-            </Link>
-          </div>
-        </div>
-
-        {/* Floating 3D Telemetry Badges */}
-        <div className="pureflow-floating-badges">
-          <div className="pureflow-3d-badge badge-top">
-            <span className="live-amber-dot" />
-            <strong>Clean Machines Active</strong>
-            <small>Catchment Unit #04 In Transit</small>
-          </div>
-          <div className="pureflow-3d-badge badge-bottom">
-            <Shield size={16} className="text-amber-500" />
-            <strong>Real-Time Watchdog</strong>
-            <small>Citizen GPS Forensics</small>
-          </div>
         </div>
       </div>
 
