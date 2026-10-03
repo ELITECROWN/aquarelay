@@ -2,12 +2,23 @@ import { useState, useEffect } from "react";
 import { Waves, Sparkles, ShieldCheck, Droplet } from "lucide-react";
 
 export default function BefreakyPreloader() {
+  const [hasVisited] = useState(() => {
+    try {
+      return sessionStorage.getItem("aquarelay_first_open_done") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [percent, setPercent] = useState(0);
   const [complete, setComplete] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(hasVisited);
 
   useEffect(() => {
-    // Only show once per session or on full reload
+    if (hasVisited) return;
+    try {
+      sessionStorage.setItem("aquarelay_first_open_done", "true");
+    } catch {}
+
     const duration = 1800; // 1.8 seconds total loading sequence
     const intervalTime = 30;
     const step = 100 / (duration / intervalTime);
@@ -26,7 +37,7 @@ export default function BefreakyPreloader() {
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [hasVisited]);
 
   if (hidden) return null;
 

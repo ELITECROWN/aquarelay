@@ -1146,7 +1146,7 @@ export function LandingPage() {
       <main>
         <section className="hero hero-centered">
           <div className="hero-copy-clean">
-            <h1>
+            <h1 className="hero-thin-animated-title">
               Protect your lakes<span>.</span>
               <br />
               Report suspicious activity<span>.</span>
@@ -1202,23 +1202,26 @@ export function LandingPage() {
             {[
               {
                 icon: ShieldAlert,
+                color: "#ef4444",
                 title: "Report Suspicious Anomaly.",
                 text: "Witnessed oily slicks, chemical foaming, or sudden wildlife distress? Submit GPS-verified photos and descriptions in seconds.",
               },
               {
                 icon: Zap,
+                color: "#facc15",
                 title: "AI Contamination Triage.",
                 text: "Automated analysis cross-references historical water data, satellite indices, and sensory indicators to calculate threat scores.",
               },
               {
                 icon: Database,
+                color: "#10b981",
                 title: "Automated Authority Dispatch.",
                 text: "Instantly routes signed incident notices to State Pollution Control Boards and Municipal Water Bureaus with documented SLAs.",
               },
             ].map((s, i) => (
               <article key={s.title} className="glass-panel" style={{ padding: "20px" }}>
-                <span className="step-index" style={{ color: "#74C476", fontWeight: "700" }}>0{i + 1}</span>
-                <s.icon size={22} style={{ color: "#74C476", margin: "10px 0" }} />
+                <span className="step-index" style={{ color: s.color, fontWeight: "700" }}>0{i + 1}</span>
+                <s.icon size={22} style={{ color: s.color, margin: "10px 0" }} />
                 <div>
                   <h3>{s.title}</h3>
                   <p>{s.text}</p>
@@ -1242,14 +1245,14 @@ export function LandingPage() {
             </div>
             <div className="demo-timeline">
               <div>
-                <i style={{ background: "#74C476" }} />
+                <i style={{ background: "#ef4444" }} />
                 <span>
                   Observation recorded
                   <small>Community citizen alert · GPS verified</small>
                 </span>
               </div>
               <div>
-                <i style={{ background: "#5ba85e" }} />
+                <i style={{ background: "#facc15" }} />
                 <span>
                   Authority dispatched
                   <small>State Pollution Control Board · Automated routing</small>

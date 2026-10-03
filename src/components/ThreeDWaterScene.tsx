@@ -14,7 +14,7 @@ export default function ThreeDWaterScene({
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xfff8f8, 0.025);
+    scene.fog = new THREE.FogExp2(0x050505, 0.032);
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -33,18 +33,18 @@ export default function ThreeDWaterScene({
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
 
-    // 2. Lighting (Crisp oceanic sky + azure water reflections)
-    const ambientLight = new THREE.AmbientLight(0xe0f2fe, 1.6);
+    // 2. Lighting (Deep dark waters with multi-color caustics: cyan, yellow & crimson)
+    const ambientLight = new THREE.AmbientLight(0x18181b, 2.2);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x38bdf8, 2.6);
+    const dirLight = new THREE.DirectionalLight(0x38bdf8, 2.4);
     dirLight.position.set(8, 12, 10);
     scene.add(dirLight);
 
-    const secondaryLight = new THREE.PointLight(0x06b6d4, 3.2, 35);
+    const secondaryLight = new THREE.PointLight(0xeab308, 3.5, 35);
     secondaryLight.position.set(-6, 4, 4);
     scene.add(secondaryLight);
 
@@ -64,16 +64,16 @@ export default function ThreeDWaterScene({
     const initialPositions = posAttribute.array.slice();
 
     const waterMaterial = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color("#0096c7"),
-      emissive: new THREE.Color("#023e8a"),
-      emissiveIntensity: 0.12,
-      roughness: 0.06,
-      metalness: 0.08,
-      transmission: 0.95,
-      ior: 1.333, // Water index of refraction
+      color: new THREE.Color("#09090b"),
+      emissive: new THREE.Color("#0369a1"),
+      emissiveIntensity: 0.18,
+      roughness: 0.08,
+      metalness: 0.15,
+      transmission: 0.92,
+      ior: 1.333,
       transparent: true,
-      opacity: 0.52,
-      reflectivity: 0.85,
+      opacity: 0.62,
+      reflectivity: 0.9,
       clearcoat: 1.0,
       clearcoatRoughness: 0.04,
       wireframe: false,

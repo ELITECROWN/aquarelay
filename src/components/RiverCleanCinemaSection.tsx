@@ -127,7 +127,7 @@ export default function RiverCleanCinemaSection() {
           }}
         >
           <div className="details-header-badge">
-            <Sparkles size={14} className="text-rose-500" />
+            <Sparkles size={14} className="text-amber-400" />
             <span>ECOLOGICAL RIVER RESTORATION PROTOCOLS</span>
           </div>
 
