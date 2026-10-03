@@ -120,26 +120,40 @@ import ShareModal from "./features/ShareModal";
 import LakeDeliveryBar from "./components/LakeDeliveryBar";
 import RiverCleanCinemaSection from "./components/RiverCleanCinemaSection";
 import PureFlowHeroVideo from "./components/PureFlowHeroVideo";
-import { openSideMenuDrawer } from "./components/SideMenuDrawer";
-import PureFlowScrollGallery from "./components/PureFlowScrollGallery";
 import { ImageStreamHero } from "./components/ui/image-stream-hero";
 
 const GALLERY_STREAM_IMAGES = [
+  {
+    src: "/gallery/cleanup-boat-unload.png",
+    alt: "River cleanup barge unloading debris",
+  },
   {
     src: "/gallery/cleanup-bridge.png",
     alt: "Volunteers cleaning riverbanks under the bridge",
   },
   {
-    src: "/gallery/cleanup-river-dredge.png",
-    alt: "Dredging debris and sludge in polluted river",
+    src: "/gallery/cleanup-crowd-event.png",
+    alt: "Community mobilization cleanup campaign",
+  },
+  {
+    src: "/gallery/cleanup-ghat-river.png",
+    alt: "Riverbank ghat remediation and clearing",
   },
   {
     src: "/gallery/cleanup-hands-sunset.png",
     alt: "Volunteer hands recovering plastic bottles at sunset",
   },
   {
+    src: "/gallery/cleanup-river-dredge.png",
+    alt: "Dredging debris and sludge in polluted river",
+  },
+  {
     src: "/gallery/cleanup-shore-bags.png",
     alt: "Massive plastic cleanup along lake shoreline",
+  },
+  {
+    src: "/gallery/cleanup-stream-bluebag.png",
+    alt: "Sorting collected micro-debris in stream",
   },
   {
     src: "/gallery/cleanup-volunteers-stream.png",
@@ -1254,8 +1268,32 @@ export function LandingPage() {
       {/* 5. River Clean Cinema (High-Impact Cleanup Machines Theater) */}
       <RiverCleanCinemaSection />
 
-      {/* 5b. Ground Zero Full-Screen Scroll-Driven Interactive Gallery */}
-      <PureFlowScrollGallery />
+      {/* 5b. Ground Zero Action Stream (3D Image Stream Hero Corridor - Scroll Driven) */}
+      <section className="pureflow-gallery-corridor-section">
+        <div className="pureflow-container">
+          <div className="gallery-section-header">
+            <div>
+              <span className="pureflow-section-tag">
+                <span className="pureflow-dot-amber" /> GROUND ZERO FORENSICS & RECOVERY
+              </span>
+              <h2 className="pureflow-heading-mid">
+                Living Proof of Clean Waters in Motion.
+              </h2>
+            </div>
+          </div>
+
+          <div className="gallery-stream-wrapper">
+            <ImageStreamHero
+              images={GALLERY_STREAM_IMAGES}
+              cards={10}
+              speed={16}
+              axis={50}
+              scrollDriven={true}
+              className="gallery-stream-card"
+            />
+          </div>
+        </div>
+      </section>
 
       {/* 6. PureFlow Impact & Accordion FAQ (matching right-middle of image) */}
       <section className="pureflow-impact-faq-section">

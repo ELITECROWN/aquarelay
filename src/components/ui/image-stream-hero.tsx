@@ -36,15 +36,6 @@ import { cn } from "@/lib/utils";
  * card-height and edge-position profile, not eyeballed.
  * ─────────────────────────────────────────────────────────────── */
 
-/**
- * Geometry of the corridor. Every length is `cqw`, a percentage of the
- * container's width, so the shape is resolution-independent.
- *
- * These interact: the ribbon only stays solid while consecutive cards
- * overlap, which needs `exitHeight / birthHeight` spread over enough
- * `cards`. Raising `exitHeight`, dropping `cards`, or pulling `railExit`
- * in all push toward a visible tear near the frame edge.
- */
 export type CorridorPath = {
   /** Strength of the projection. Lower is a wider-angle, more dramatic rush. @default 30 */
   perspective?: number;
@@ -90,13 +81,31 @@ const PATH: Required<CorridorPath> = {
   stops: 24,
 };
 
+/** Mathematical transform calculation for a card at parametric position u */
+export function computeCardState(
+  u: number,
+  dir: 1 | -1,
+  p: Required<CorridorPath>,
+) {
+  const normU = ((u % 1) + 1) % 1;
+  const scale =
+    (p.birthHeight / p.cardHeight) *
+    Math.pow(p.exitHeight / p.birthHeight, normU);
+  const z = p.perspective * (1 - 1 / scale);
+  const rail =
+    p.railExit - (p.railExit - p.railBirth) * Math.pow(1 - normU, p.fan);
+  const turn = p.turnBirth + (p.turnExit - p.turnBirth) * normU;
+  return {
+    transform: `translate3d(${(dir * rail).toFixed(2)}cqw, 0, ${z.toFixed(2)}cqw) rotateY(${(-dir * turn).toFixed(2)}deg)`,
+    normU,
+  };
+}
+
 /** Sample the path once so the CSS keyframes trace the real curve. */
 function keyframes(dir: 1 | -1, name: string, p: Required<CorridorPath>) {
   const steps: string[] = [];
   for (let s = 0; s <= p.stops; s++) {
     const u = s / p.stops;
-    // Geometric in apparent size, so consecutive cards keep a constant size
-    // ratio and the ribbon stays solid at both ends.
     const scale =
       (p.birthHeight / p.cardHeight) *
       Math.pow(p.exitHeight / p.birthHeight, u);
@@ -127,14 +136,12 @@ export type ImageStreamHeroProps = {
   images: StreamImage[];
   /**
    * Cards on each rail at once. More cards means a denser corridor, not a
-   * faster one — spacing is derived from this and `speed`. Drop it far below
-   * the default and consecutive cards grow too fast to stay overlapped near
-   * the exit, which tears a gap in the ribbon.
+   * faster one — spacing is derived from this and `speed`.
    * @default 9
    */
   cards?: number;
   /**
-   * Seconds for one card to travel the whole corridor.
+   * Seconds for one card to travel the whole corridor when in auto-play mode.
    * @default 18
    */
   speed?: number;
@@ -148,6 +155,15 @@ export type ImageStreamHeroProps = {
   /** Content rendered above the corridor. */
   children?: React.ReactNode;
   className?: string;
+  /**
+   * When true, motion is controlled strictly by user scrolling & scrubbing
+   * instead of continuous auto-looping playback.
+   */
+  scrollDriven?: boolean;
+  /**
+   * Optional externally driven scroll progress (0..N).
+   */
+  scrollProgress?: number;
 };
 
 export function ImageStreamHero({
@@ -158,8 +174,11 @@ export function ImageStreamHero({
   path,
   children,
   className,
+  scrollDriven = false,
+  scrollProgress,
   ...props
 }: React.ComponentProps<"div"> & ImageStreamHeroProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const id = React.useId().replace(/[^a-zA-Z0-9]/g, "");
   const right = `ish-r-${id}`;
   const left = `ish-l-${id}`;
@@ -167,23 +186,93 @@ export function ImageStreamHero({
 
   const p = React.useMemo(() => ({ ...PATH, ...path }), [path]);
 
-  const css = React.useMemo(
-    () =>
+  // Scroll tracking state
+  const [pageScroll, setPageScroll] = React.useState(0);
+  const [wheelOffset, setWheelOffset] = React.useState(0);
+  const [dragOffset, setDragOffset] = React.useState(0);
+  const isDraggingRef = React.useRef(false);
+  const lastPointerPos = React.useRef<{ x: number; y: number } | null>(null);
+
+  React.useEffect(() => {
+    if (!scrollDriven || scrollProgress !== undefined) return;
+
+    const onScroll = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const winH = window.innerHeight;
+      const startY = winH * 0.9;
+      const endY = -rect.height * 0.4;
+      const total = startY - endY;
+      const current = startY - rect.top;
+      const progress = Math.max(0, current / total);
+      setPageScroll(progress * 2.8);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrollDriven, scrollProgress]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollDriven) return;
+    setWheelOffset((prev) => prev + e.deltaY * 0.001);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!scrollDriven) return;
+    isDraggingRef.current = true;
+    lastPointerPos.current = { x: e.clientX, y: e.clientY };
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!scrollDriven || !isDraggingRef.current || !lastPointerPos.current) return;
+    const dx = e.clientX - lastPointerPos.current.x;
+    const dy = e.clientY - lastPointerPos.current.y;
+    lastPointerPos.current = { x: e.clientX, y: e.clientY };
+    const delta = dx * -0.0025 + dy * 0.002;
+    setDragOffset((prev) => prev + delta);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!scrollDriven) return;
+    isDraggingRef.current = false;
+    lastPointerPos.current = null;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const effectiveProgress =
+    (scrollProgress ?? pageScroll) + wheelOffset + dragOffset;
+
+  const css = React.useMemo(() => {
+    if (scrollDriven) return "";
+    return (
       `${keyframes(1, right, p)}${keyframes(-1, left, p)}` +
-      // Pausing rather than disabling keeps the corridor whole: every card is
-      // already dropped mid-flight by its negative delay, so it freezes as a
-      // finished still instead of collapsing onto the axis.
-      `@media(prefers-reduced-motion:reduce){.${card}{animation-play-state:paused}}`,
-    [right, left, card, p],
-  );
+      `@media(prefers-reduced-motion:reduce){.${card}{animation-play-state:paused}}`
+    );
+  }, [right, left, card, p, scrollDriven]);
 
   return (
     <div
+      ref={containerRef}
       className={cn("relative overflow-hidden", className)}
+      onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       {...props}
-      style={{ containerType: "inline-size", ...props.style }}
+      style={{
+        containerType: "inline-size",
+        touchAction: scrollDriven ? "pan-y" : undefined,
+        ...props.style,
+      }}
     >
-      <style>{css}</style>
+      {css ? <style>{css}</style> : null}
 
       <div
         aria-hidden
@@ -197,15 +286,64 @@ export function ImageStreamHero({
           className="absolute inset-0"
           style={{ transformStyle: "preserve-3d" }}
         >
-          {[right, left].map((name) =>
-            Array.from({ length: cards }, (_, i) => {
-              // Both rails walk the same sequence, so the left side mirrors
-              // the right at every depth.
+          {[right, left].map((name, railIndex) => {
+            const dir: 1 | -1 = railIndex === 0 ? 1 : -1;
+            return Array.from({ length: cards }, (_, i) => {
+              if (scrollDriven) {
+                const rawU = i / cards + effectiveProgress;
+                const { transform, normU } = computeCardState(rawU, dir, p);
+                const cycle = Math.floor(rawU);
+                const imgIndex =
+                  ((i + cycle) % Math.max(images.length, 1) +
+                    Math.max(images.length, 1)) %
+                  Math.max(images.length, 1);
+                const img = images[imgIndex];
+
+                return (
+                  <div
+                    key={`${name}-${i}`}
+                    className={cn(
+                      card,
+                      "absolute overflow-hidden select-none",
+                    )}
+                    style={{
+                      left: "50%",
+                      top: `${axis}%`,
+                      width: `${p.cardWidth}cqw`,
+                      height: `${p.cardHeight}cqw`,
+                      marginLeft: `${-p.cardWidth / 2}cqw`,
+                      marginTop: `${-p.cardHeight / 2}cqw`,
+                      borderRadius: `${p.cardRadius}cqw`,
+                      transform,
+                      zIndex: Math.round(normU * 100),
+                      backfaceVisibility: "hidden",
+                      border: "1px solid rgba(255, 255, 255, 0.45)",
+                      boxShadow: "0 10px 32px rgba(0, 0, 0, 0.16)",
+                    }}
+                  >
+                    {img ? (
+                      <img
+                        src={img.src}
+                        alt={img.alt ?? ""}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover pointer-events-none"
+                        draggable={false}
+                      />
+                    ) : null}
+                  </div>
+                );
+              }
+
+              // Continuous keyframe fallback mode
               const img = images[i % Math.max(images.length, 1)];
               return (
                 <div
                   key={`${name}-${i}`}
-                  className={cn(card, "absolute overflow-hidden")}
+                  className={cn(
+                    card,
+                    "absolute overflow-hidden select-none",
+                  )}
                   style={{
                     left: "50%",
                     top: `${axis}%`,
@@ -215,10 +353,10 @@ export function ImageStreamHero({
                     marginTop: `${-p.cardHeight / 2}cqw`,
                     borderRadius: `${p.cardRadius}cqw`,
                     animation: `${name} ${speed}s linear infinite`,
-                    // Negative delay drops each card mid-flight, so the
-                    // corridor is already full on the first frame.
                     animationDelay: `${-(i * speed) / cards}s`,
                     backfaceVisibility: "hidden",
+                    border: "1px solid rgba(255, 255, 255, 0.45)",
+                    boxShadow: "0 10px 32px rgba(0, 0, 0, 0.16)",
                   }}
                 >
                   {img ? (
@@ -227,14 +365,14 @@ export function ImageStreamHero({
                       alt={img.alt ?? ""}
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover pointer-events-none"
                       draggable={false}
                     />
                   ) : null}
                 </div>
               );
-            }),
-          )}
+            });
+          })}
         </div>
       </div>
 
