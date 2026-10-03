@@ -141,9 +141,13 @@ export default function ReportPage() {
     setMedia([]);
     if (user) void reloadDrafts();
   }, [user?.id]);
+  const waterList = (Array.isArray(waters.data) ? waters.data : waters.data?.items) || [];
+  const caseList = (Array.isArray(cases.data) ? cases.data : cases.data?.items) || [];
+  const candidateList = candidates.data?.items || [];
+
   useEffect(() => {
     const id = params.get("waterbody") || params.get("waterbody_id");
-    const water = waters.data?.items.find((item) => item.id === id);
+    const water = waterList.find((item) => item.id === id);
     if (water && !values.waterbody_id)
       setValues((previous) => ({
         ...previous,
@@ -169,11 +173,11 @@ export default function ReportPage() {
       window.removeEventListener("offline", onOffline);
     };
   }, [user?.id]);
-  const water = waters.data?.items.find(
+  const water = waterList.find(
     (item) => item.id === values.waterbody_id,
   );
-  const suggested = candidates.data?.items.map((item) => item.case) || [];
-  const explicitlySelected = cases.data?.items.find(
+  const suggested = candidateList.map((item) => item.case) || [];
+  const explicitlySelected = caseList.find(
     (item) =>
       item.id === values.related_case_id &&
       item.waterbody_id === values.waterbody_id,
@@ -413,7 +417,7 @@ export default function ReportPage() {
                   <select
                     value={values.waterbody_id}
                     onChange={(event) => {
-                      const selected = waters.data?.items.find(
+                      const selected = waterList.find(
                         (item) => item.id === event.target.value,
                       );
                       if (selected)
@@ -428,7 +432,7 @@ export default function ReportPage() {
                     }}
                   >
                     <option value="">Choose a registered water body</option>
-                    {waters.data?.items.map((item) => (
+                    {waterList.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name} · {item.locality}
                       </option>
@@ -687,7 +691,7 @@ export default function ReportPage() {
                         {date(item.observed_at)} · {item.state}
                       </small>
                       <small>
-                        {candidates.data?.items
+                        {candidateList
                           .find((candidate) => candidate.case.id === item.id)
                           ?.reasons.join(" · ") ||
                           "You explicitly selected this case from its public record; it is not an automatic duplicate suggestion."}
@@ -844,7 +848,7 @@ export default function ReportPage() {
               <div className="wf-draft" key={draft.id}>
                 <div>
                   <strong>
-                    {waters.data?.items.find(
+                    {waterList.find(
                       (item) => item.id === draft.values.waterbody_id,
                     )?.name || "Observation draft"}
                   </strong>

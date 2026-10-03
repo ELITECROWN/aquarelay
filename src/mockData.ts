@@ -396,9 +396,19 @@ export function handleMockRoute<T = any>(path: string, options: RequestInit = {}
     return { notifications: true, theme: "dark" } as T;
   }
 
+  if (route.startsWith("/reports/candidates")) {
+    return { items: [], total: 0 } as T;
+  }
+
   if (route.startsWith("/cases") || route.startsWith("/incidents")) {
     const passport = getMockPassport("wb-reedwater");
-    return passport.cases as T;
+    const caseItems = Array.isArray(passport.cases) ? passport.cases : [];
+    const parts = route.split("/");
+    if (parts.length > 2 && parts[2]) {
+      const found = caseItems.find((c) => c.id === parts[2]);
+      if (found) return found as T;
+    }
+    return { items: caseItems, total: caseItems.length } as T;
   }
 
   if (method === "POST" && (route === "/reports" || route.endsWith("/reports"))) {

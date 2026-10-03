@@ -90,33 +90,6 @@ export default function PureFlowHeroVideo() {
         <div className="pureflow-hero-overlay" />
       </div>
 
-      {/* Floating PureFlow Glass Capsule Top Navigation */}
-      <header className="pureflow-capsule-nav">
-        <div
-          className="pureflow-nav-logo logo-clickable"
-          onClick={openSideMenuDrawer}
-          title="Click to open menu"
-        >
-          <span className="pureflow-droplet-mark">
-            <Waves size={18} />
-          </span>
-          <span className="pureflow-brand-name">AquaRelay</span>
-        </div>
-
-        <nav className="pureflow-nav-links">
-          <Link to="/" className="active">Home</Link>
-          <Link to="/dispatch-tracker">Track</Link>
-          <Link to="/explore">Explore</Link>
-          <Link to="/notifications">Updates</Link>
-          <Link to="/organisations">Organisations</Link>
-        </nav>
-
-        <div className="pureflow-nav-right">
-          <Link to="/report" className="pureflow-nav-btn">
-            Report Anomaly
-          </Link>
-        </div>
-      </header>
 
       {/* Hero Content matching the PureFlow reference image */}
       <div

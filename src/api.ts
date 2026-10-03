@@ -25,10 +25,9 @@ export async function api<T = any>(
     });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        const mock = handleMockRoute<T>(path, options);
-        if (mock !== null) return mock;
-      }
+      const mock = handleMockRoute<T>(path, options);
+      if (mock !== null) return mock;
+
       let message = `Request failed (${response.status})`;
       try {
         const data = await response.json();
