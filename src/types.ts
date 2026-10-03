@@ -6,6 +6,8 @@ export interface User {
   role: string;
   organisation_id?: string | null;
   csrf_token?: string;
+  username?: string;
+  age?: number | null;
 }
 export interface WaterBody {
   id: string;

@@ -15,7 +15,7 @@ from .models import LoginSession, Membership, User, uid, utcnow
 router = APIRouter()
 hasher = PasswordHasher()
 COOKIE = "aquarelay_session"
-SECURE_COOKIE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+SECURE_COOKIE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
 
 def token_hash(token):
     return hashlib.sha256(token.encode()).hexdigest()
@@ -45,7 +45,22 @@ def require_manager(user: User = Depends(require_user), db: Session = Depends(ge
     return user
 
 def public_user(user, csrf):
-    return {"id": user.id, "name": user.name, "email": user.email, "role": user.role, "organisation_id": user.organisation_id, "csrf_token": csrf}
+    if not user:
+        return None
+    prefs = (user.preferences or {}) if hasattr(user, "preferences") else {}
+    profile = prefs.get("profile", {}) if isinstance(prefs, dict) else {}
+    username = profile.get("username") or (user.email.split("@")[0] if user.email else "")
+    age = profile.get("age")
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "organisation_id": user.organisation_id,
+        "username": username,
+        "age": age,
+        "csrf_token": csrf,
+    }
 
 def new_session(db, response, user_id=None):
     token = secrets.token_urlsafe(48)
@@ -89,6 +104,8 @@ def login(body: Credentials, request: Request, response: Response, db: Session =
 
 class Registration(Credentials):
     name: str = Field(min_length=2, max_length=120)
+    username: str | None = Field(default=None, max_length=40)
+    age: int | None = Field(default=None, ge=1, le=130)
 
 @router.post("/auth/register", status_code=201)
 def register(body: Registration, request: Request, response: Response, db: Session = Depends(get_db)):
@@ -98,7 +115,25 @@ def register(body: Registration, request: Request, response: Response, db: Sessi
         raise HTTPException(422, "Enter a valid email address.")
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "An account already uses this email address.")
-    user = User(id=uid("user"), name=body.name.strip(), email=email, password_hash=hasher.hash(body.password), role="citizen")
+    
+    username_clean = (body.username or email.split("@")[0]).strip().lstrip("@").lower()
+    # Check username uniqueness
+    all_users = db.scalars(select(User)).all()
+    for u in all_users:
+        u_prefs = u.preferences or {}
+        u_prof = u_prefs.get("profile", {}) if isinstance(u_prefs, dict) else {}
+        existing_u = (u_prof.get("username") or u.email.split("@")[0]).strip().lstrip("@").lower()
+        if existing_u == username_clean:
+            raise HTTPException(409, f"Username @{username_clean} is already taken. Please choose another unique username.")
+
+    user = User(
+        id=uid("user"),
+        name=body.name.strip(),
+        email=email,
+        password_hash=hasher.hash(body.password),
+        role="citizen",
+        preferences={"profile": {"name": body.name.strip(), "username": username_clean, "age": body.age}},
+    )
     db.add(user)
     db.flush()
     previous = session_record(request, db)
@@ -106,6 +141,52 @@ def register(body: Registration, request: Request, response: Response, db: Sessi
         db.delete(previous)
     row = new_session(db, response, user.id)
     return {"user": public_user(user, row.csrf_token), "csrf_token": row.csrf_token}
+
+class ProfileUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    username: str = Field(min_length=3, max_length=40)
+    age: int | None = Field(default=None, ge=1, le=130)
+
+@router.put("/auth/profile")
+def update_profile(body: ProfileUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):
+    validate_csrf(request, db)
+    username_clean = body.username.strip().lstrip("@").lower()
+    
+    all_users = db.scalars(select(User).where(User.id != user.id)).all()
+    for u in all_users:
+        u_prefs = u.preferences or {}
+        u_prof = u_prefs.get("profile", {}) if isinstance(u_prefs, dict) else {}
+        existing_u = (u_prof.get("username") or u.email.split("@")[0]).strip().lstrip("@").lower()
+        if existing_u == username_clean:
+            raise HTTPException(409, f"Username @{username_clean} is already taken. Please choose another unique username.")
+
+    prefs = dict(user.preferences or {})
+    current_profile = dict(prefs.get("profile") or {})
+    current_profile["name"] = body.name.strip()
+    current_profile["username"] = username_clean
+    current_profile["age"] = body.age
+    prefs["profile"] = current_profile
+
+    user.name = body.name.strip()
+    user.preferences = prefs
+    db.commit()
+
+    row = session_record(request, db)
+    csrf = row.csrf_token if row else ""
+    return {"user": public_user(user, csrf), "message": "Profile updated successfully."}
+
+@router.get("/auth/profile")
+def get_profile(user: User = Depends(require_user)):
+    prefs = user.preferences or {}
+    profile = prefs.get("profile", {}) if isinstance(prefs, dict) else {}
+    username = profile.get("username") or user.email.split("@")[0]
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "age": profile.get("age"),
+        "username": username,
+    }
 
 @router.post("/auth/logout")
 def logout(request: Request, response: Response, db: Session = Depends(get_db)):

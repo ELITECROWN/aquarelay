@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { Waves } from "lucide-react";
 import { openSideMenuDrawer } from "./SideMenuDrawer";
+import { useSession } from "../session";
 
 export default function PureFlowNavbar() {
   const location = useLocation();
   const path = location.pathname;
+  const { user } = useSession();
 
   return (
     <div className="pureflow-nav-fixed-container">
@@ -61,6 +63,62 @@ export default function PureFlowNavbar() {
           >
             Report Anomaly
           </Link>
+          {user ? (
+            <Link
+              to="/settings"
+              className="pureflow-profile-chip"
+              title={`Signed in as ${user.name} (@${user.username || user.email.split("@")[0]})`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "4px 10px 4px 6px",
+                borderRadius: "30px",
+                background: "rgba(245, 158, 11, 0.15)",
+                border: "1px solid rgba(245, 158, 11, 0.35)",
+                textDecoration: "none",
+                color: "#1e293b",
+                fontSize: "12px",
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <span
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#f59e0b",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                }}
+              >
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+              <span style={{ maxWidth: "80px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                @{user.username || user.email.split("@")[0]}
+              </span>
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="pureflow-login-link"
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#475569",
+                textDecoration: "none",
+                padding: "6px 12px",
+                borderRadius: "8px",
+              }}
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </header>
     </div>

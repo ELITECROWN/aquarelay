@@ -37,7 +37,7 @@ export default function SideMenuDrawer(props?: {
   isOpen?: boolean;
   onClose?: () => void;
 }) {
-  const { user, refresh } = useSession();
+  const { user, refresh, setUser } = useSession();
   const location = useLocation();
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -110,7 +110,13 @@ export default function SideMenuDrawer(props?: {
 
         {/* Profile Section at Top with Settings & Profile Logo */}
         <div className="drawer-profile-card">
-          <div className="drawer-profile-main">
+          <Link
+            to="/settings"
+            className="drawer-profile-main"
+            onClick={handleClose}
+            style={{ textDecoration: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
+            title="View & Edit Profile"
+          >
             <span className="drawer-profile-avatar">
               {user?.name ? (
                 user.name.charAt(0).toUpperCase()
@@ -120,16 +126,20 @@ export default function SideMenuDrawer(props?: {
             </span>
             <div className="drawer-profile-info">
               <span className="drawer-profile-name">{user?.name || "Public Visitor"}</span>
-              <span className="drawer-profile-role">
+              <span className="drawer-profile-handle" style={{ fontSize: "11px", color: "#d97706", fontWeight: 700 }}>
+                @{user?.username || (user?.email ? user.email.split("@")[0] : "visitor")}
+                {user?.age ? ` · ${user.age} yrs` : ""}
+              </span>
+              <span className="drawer-profile-role" style={{ fontSize: "11px", color: "#64748b" }}>
                 {user?.role ? user.role.replaceAll("_", " ") : "Citizen Watchdog"}
               </span>
             </div>
-          </div>
+          </Link>
           <Link
             to="/settings"
             className="drawer-settings-btn"
             onClick={handleClose}
-            title="Settings & Preferences"
+            title="Edit Profile & Settings"
             aria-label="Settings"
           >
             <Settings size={18} />
@@ -170,8 +180,9 @@ export default function SideMenuDrawer(props?: {
               onClick={async () => {
                 try {
                   await api("/auth/logout", { method: "POST" });
-                  await refresh();
                 } catch {}
+                setUser(null);
+                await refresh();
                 handleClose();
               }}
             >

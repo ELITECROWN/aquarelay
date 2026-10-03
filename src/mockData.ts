@@ -420,18 +420,5 @@ export function handleMockRoute<T = any>(path: string, options: RequestInit = {}
     } as T;
   }
 
-  if (method === "POST" && route.startsWith("/auth/")) {
-    return {
-      user: {
-        id: "user-citizen",
-        name: "Citizen Contributor",
-        email: "citizen@aquarelay.local",
-        role: "citizen",
-        csrf_token: "demo-csrf-token",
-      },
-      csrf_token: "demo-csrf-token",
-    } as T;
-  }
-
   return null;
 }

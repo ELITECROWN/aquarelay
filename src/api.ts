@@ -25,6 +25,18 @@ export async function api<T = any>(
     });
 
     if (!response.ok) {
+      if (path.includes("/auth/") && response.status < 500) {
+        let message = `Request failed (${response.status})`;
+        try {
+          const data = await response.json();
+          message =
+            typeof data.detail === "string"
+              ? data.detail
+              : JSON.stringify(data.detail || data);
+        } catch {}
+        throw new Error(message);
+      }
+
       const mock = handleMockRoute<T>(path, options);
       if (mock !== null) return mock;
 
@@ -53,6 +65,9 @@ export async function api<T = any>(
 
     return (await response.json()) as T;
   } catch (err) {
+    if (method !== "GET" && method !== "HEAD") {
+      throw err;
+    }
     const mock = handleMockRoute<T>(path, options);
     if (mock !== null) return mock;
     throw err;

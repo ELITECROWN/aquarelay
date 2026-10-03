@@ -48,11 +48,12 @@ import {
   ChevronUp,
   Heart,
   Sparkles,
+  User as UserIcon,
 } from "lucide-react";
-import { api } from "./api";
+import { api, setCsrf } from "./api";
 import { useSession } from "./session";
 import { useToast, PageHeader, Empty, Badge, formatDate, Modal } from "./ui";
-import type { WaterBody, Passport, RecordedEvent } from "./types";
+import type { WaterBody, Passport, RecordedEvent, User } from "./types";
 const LazyMap = lazy(() => import("./MapView"));
 function MapUnavailable() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -2043,8 +2044,33 @@ export function LoginPage() {
   const [register, setRegister] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
-  const { user, refresh } = useSession(),
+  const { user, refresh, setUser } = useSession(),
     navigate = useNavigate();
+
+  const handleDemoLogin = async (email: string) => {
+    setError("");
+    setBusy(true);
+    try {
+      const data = await api<{ user: User; csrf_token: string }>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password: "DemoPass123!",
+        }),
+      });
+      if (data?.csrf_token) setCsrf(data.csrf_token);
+      if (data?.user) {
+        setUser({ ...data.user, csrf_token: data.csrf_token });
+      }
+      await refresh();
+      navigate("/explore");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="page">
       <div className="login-panel">
@@ -2061,13 +2087,32 @@ export function LoginPage() {
         </h1>
         <p>
           {user
-            ? `Signed in as ${user.name}`
+            ? `Signed in as ${user.name} (@${user.username || (user.email ? user.email.split("@")[0] : "user")})`
             : "Explore publicly. Sign in to contribute, follow places, or work with your organisation."}
         </p>
         {user ? (
-          <Link className="button primary" to="/explore">
-            Explore waters <ArrowRight size={17} />
-          </Link>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px", justifyContent: "center" }}>
+            <Link className="button primary" to="/explore">
+              Explore waters <ArrowRight size={17} />
+            </Link>
+            <Link className="button secondary" to="/settings">
+              Edit Profile & Settings
+            </Link>
+            <button
+              type="button"
+              className="text-button"
+              style={{ color: "#ef4444" }}
+              onClick={async () => {
+                try {
+                  await api("/auth/logout", { method: "POST" });
+                } catch {}
+                setUser(null);
+                await refresh();
+              }}
+            >
+              Sign out / Switch account
+            </button>
+          </div>
         ) : (
           <form
             className="form-stack"
@@ -2077,14 +2122,26 @@ export function LoginPage() {
               setBusy(true);
               const f = new FormData(e.currentTarget);
               try {
-                await api(`/auth/${register ? "register" : "login"}`, {
+                const endpoint = register ? "/auth/register" : "/auth/login";
+                const payload: any = {
+                  email: f.get("email"),
+                  password: f.get("password"),
+                };
+                if (register) {
+                  payload.name = f.get("name");
+                  const rawU = f.get("username");
+                  payload.username = rawU ? String(rawU).replace(/^@+/, "").trim() : undefined;
+                  const rawAge = f.get("age");
+                  payload.age = rawAge ? Number(rawAge) : undefined;
+                }
+                const data = await api<{ user: User; csrf_token: string }>(endpoint, {
                   method: "POST",
-                  body: JSON.stringify({
-                    email: f.get("email"),
-                    password: f.get("password"),
-                    name: f.get("name"),
-                  }),
+                  body: JSON.stringify(payload),
                 });
+                if (data?.csrf_token) setCsrf(data.csrf_token);
+                if (data?.user) {
+                  setUser({ ...data.user, csrf_token: data.csrf_token });
+                }
                 await refresh();
                 navigate("/explore");
               } catch (error) {
@@ -2095,27 +2152,54 @@ export function LoginPage() {
             }}
           >
             {register && (
-              <label>
-                Name
-                <input name="name" autoComplete="name" required />
-              </label>
+              <>
+                <label>
+                  Full Name
+                  <input name="name" autoComplete="name" placeholder="e.g. Chandan Kumar" required />
+                </label>
+                <div className="date-pair" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <label>
+                    Unique Username
+                    <div style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#d97706", fontWeight: 700 }}>@</span>
+                      <input
+                        name="username"
+                        placeholder="unique_handle"
+                        style={{ paddingLeft: "26px" }}
+                        autoComplete="username"
+                        required
+                      />
+                    </div>
+                  </label>
+                  <label>
+                    Age
+                    <input
+                      name="age"
+                      type="number"
+                      min="5"
+                      max="120"
+                      placeholder="e.g. 24"
+                    />
+                  </label>
+                </div>
+              </>
             )}
             <label>
               Email
-              <input name="email" type="email" autoComplete="email" required />
+              <input name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
             </label>
             <label>
               Password
               <input
                 name="password"
                 type="password"
-                minLength={register ? 10 : 1}
+                minLength={8}
                 autoComplete={register ? "new-password" : "current-password"}
                 required
               />
             </label>
             {error && (
-              <p className="error-message" role="alert">
+              <p className="error-message" role="alert" style={{ background: "#fee2e2", color: "#b91c1c", padding: "10px 14px", borderRadius: "8px", border: "1px solid #f87171" }}>
                 {error}
               </p>
             )}
@@ -2126,43 +2210,76 @@ export function LoginPage() {
             <button
               className="text-button"
               type="button"
-              onClick={() => setRegister(!register)}
+              onClick={() => {
+                setError("");
+                setRegister(!register);
+              }}
             >
               {register
                 ? "Already have an account? Sign in"
                 : "Create a citizen account"}
             </button>
-            {config.data?.demo_mode && (
-              <div className="demo-accounts">
-                <Badge>DEMO IDENTITIES</Badge>
-                <p>
-                  Citizen: citizen@demo.aquarelay.local
-                  <br />
-                  Manager: manager@demo.aquarelay.local
-                  <br />
-                  Password: DemoPass123!
-                </p>
-                <small>
-                  Separate seeded identities. Organisation actions are enforced
-                  by the server.
-                </small>
+
+            {/* Quick 1-Click Demo Login */}
+            <div className="demo-accounts" style={{ marginTop: "16px", padding: "14px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                <Badge state="warning">1-CLICK DEMO ACCESS</Badge>
+                <small style={{ color: "#92400e", fontWeight: 600 }}>Test identities</small>
               </div>
-            )}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  style={{ flex: "1 1 140px", fontSize: "12px", padding: "8px 12px" }}
+                  disabled={busy}
+                  onClick={() => handleDemoLogin("citizen@demo.aquarelay.local")}
+                >
+                  ⚡ Sign in as Citizen
+                </button>
+                <button
+                  type="button"
+                  className="button secondary"
+                  style={{ flex: "1 1 140px", fontSize: "12px", padding: "8px 12px" }}
+                  disabled={busy}
+                  onClick={() => handleDemoLogin("manager@demo.aquarelay.local")}
+                >
+                  ⚡ Sign in as Manager
+                </button>
+              </div>
+            </div>
           </form>
         )}
       </div>
     </div>
   );
 }
+
 export function SettingsPage() {
-  const { user, refresh } = useSession(),
+  const { user, refresh, updateProfile, setUser } = useSession(),
     toast = useToast(),
     navigate = useNavigate();
+
+  // Profile fields state
+  const [profileName, setProfileName] = useState(user?.name || "");
+  const [profileUsername, setProfileUsername] = useState(user?.username || (user?.email ? user.email.split("@")[0] : ""));
+  const [profileAge, setProfileAge] = useState<string | number>(user?.age ?? "");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "");
+      setProfileUsername(user.username || (user.email ? user.email.split("@")[0] : ""));
+      setProfileAge(user.age ?? "");
+    }
+  }, [user]);
+
   const query = useQuery({
     queryKey: ["preferences", user?.id],
     queryFn: () => api<any>("/preferences"),
     enabled: !!user,
   });
+
   const [preferences, setPreferences] = useState<any>({
     digest: "immediate",
     quiet_start: "",
@@ -2171,145 +2288,304 @@ export function SettingsPage() {
     case_updates: true,
     biodiversity: true,
   });
+
   useEffect(() => {
-    setPreferences(
-      query.data || {
-        digest: "immediate",
-        quiet_start: "",
-        quiet_end: "",
-        reports: true,
-        case_updates: true,
-        actions: true,
-        evidence_requests: true,
-        biodiversity: true,
-      },
-    );
-  }, [query.data, user?.id]);
-  if (!user)
-    return (
-      <AuthNeeded
-        title="Make your updates useful."
-        text="Sign in to set notification preferences and manage your account."
-      />
-    );
+    if (query.data) {
+      setPreferences(query.data);
+    }
+  }, [query.data]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSaving(true);
+    try {
+      if (!profileName.trim()) {
+        throw new Error("Name cannot be empty.");
+      }
+      const cleanUsername = profileUsername.trim().replace(/^@+/, "");
+      if (!cleanUsername || cleanUsername.length < 3) {
+        throw new Error("Unique username must be at least 3 characters.");
+      }
+      const parsedAge = profileAge !== "" && profileAge !== null && profileAge !== undefined ? Number(profileAge) : null;
+      if (parsedAge !== null && (isNaN(parsedAge) || parsedAge < 1 || parsedAge > 130)) {
+        throw new Error("Please enter a valid age between 1 and 130.");
+      }
+
+      await updateProfile({
+        name: profileName.trim(),
+        username: cleanUsername,
+        age: parsedAge,
+      });
+      toast("Profile updated successfully!");
+    } catch (err) {
+      setProfileError((err as Error).message);
+      toast((err as Error).message);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   return (
     <div className="page settings-page">
       <PageHeader
         eyebrow="ACCOUNT & PREFERENCES"
-        title="AquaRelay, at your pace."
-        description="Choose which recorded updates matter to you."
+        title="Profile & Settings"
+        description="Manage your identity, unique username, age, and notification delivery options."
       />
-      <div className="two-column">
-        <form
-          className="info-panel form-stack"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await api("/preferences", {
-                method: "PUT",
-                body: JSON.stringify(preferences),
-              });
-              toast("Preferences saved.");
-            } catch (error) {
-              toast((error as Error).message);
-            }
-          }}
-        >
-          <h2>In-app notifications</h2>
-          {[
-            "reports",
-            "case_updates",
-            "actions",
-            "evidence_requests",
-            "biodiversity",
-          ].map((k) => (
-            <label className="checkbox-row" key={k}>
+
+      {/* USER PROFILE CARD */}
+      <section
+        className="info-panel"
+        style={{
+          background: "#ffffff",
+          border: "2px solid #f59e0b",
+          borderRadius: "14px",
+          padding: "24px",
+          marginBottom: "24px",
+          boxShadow: "0 4px 14px rgba(245, 158, 11, 0.08)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+          <div
+            style={{
+              width: "52px",
+              height: "52px",
+              borderRadius: "50%",
+              background: "#fef3c7",
+              color: "#d97706",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "22px",
+              fontWeight: 700,
+              border: "2px solid #f59e0b",
+            }}
+          >
+            {profileName ? profileName.charAt(0).toUpperCase() : <UserIcon size={24} />}
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a" }}>
+              {user ? "Your Profile" : "Guest / Local Profile"}
+            </h2>
+            <p style={{ margin: "2px 0 0", color: "#64748b", fontSize: "13px" }}>
+              {user ? `Signed in as ${user.email}` : "Configure your display identity on this device"}
+            </p>
+          </div>
+          {user && (
+            <div style={{ marginLeft: "auto" }}>
+              <Badge state="active">{user.role.replaceAll("_", " ")}</Badge>
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleSaveProfile} className="form-stack">
+          <div className="date-pair" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <label style={{ fontWeight: 600 }}>
+              Full Name
               <input
-                type="checkbox"
-                checked={preferences[k] !== false}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, [k]: e.target.checked })
-                }
-              />
-              {k.replaceAll("_", " ")}
-            </label>
-          ))}
-          <label>
-            Delivery preference
-            <select
-              value={preferences.digest || "immediate"}
-              onChange={(e) =>
-                setPreferences({ ...preferences, digest: e.target.value })
-              }
-            >
-              <option value="immediate">As events are recorded</option>
-              <option value="daily">Daily digest</option>
-            </select>
-          </label>
-          <div className="date-pair">
-            <label>
-              Quiet from (Asia/Kolkata)
-              <input
-                type="time"
-                value={preferences.quiet_start || ""}
-                onChange={(e) =>
-                  setPreferences({
-                    ...preferences,
-                    quiet_start: e.target.value,
-                  })
-                }
+                type="text"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="e.g. Chandan Kumar"
+                required
               />
             </label>
-            <label>
-              Quiet until (Asia/Kolkata)
+            <label style={{ fontWeight: 600 }}>
+              Age
               <input
-                type="time"
-                value={preferences.quiet_end || ""}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, quiet_end: e.target.value })
-                }
+                type="number"
+                min="1"
+                max="130"
+                value={profileAge}
+                onChange={(e) => setProfileAge(e.target.value)}
+                placeholder="e.g. 24"
               />
             </label>
           </div>
-          <button className="button primary">Save preferences</button>
-        </form>
-        <aside>
-          <div className="info-panel">
-            <h3>{user.name}</h3>
-            <p>{user.email}</p>
-            <Badge>{user.role.replaceAll("_", " ")}</Badge>
-            <p>
-              Account-scoped offline drafts remain on this device. Synced
-              records remain in the database.
+
+          <label style={{ fontWeight: 600 }}>
+            Unique Username
+            <div style={{ position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#d97706",
+                  fontWeight: 700,
+                }}
+              >
+                @
+              </span>
+              <input
+                type="text"
+                value={profileUsername.replace(/^@+/, "")}
+                onChange={(e) => setProfileUsername(e.target.value.replace(/^@+/, "").replace(/\s+/g, "_"))}
+                placeholder="unique_username"
+                style={{ paddingLeft: "28px" }}
+                required
+              />
+            </div>
+            <small style={{ color: "#64748b", display: "block", marginTop: "4px" }}>
+              Your handle appears as: <strong style={{ color: "#d97706" }}>@{profileUsername.replace(/^@+/, "") || "username"}</strong>
+            </small>
+          </label>
+
+          {profileError && (
+            <p className="error-message" role="alert" style={{ background: "#fee2e2", color: "#b91c1c", padding: "10px", borderRadius: "8px" }}>
+              {profileError}
             </p>
-            <button
-              className="button secondary"
-              onClick={async () => {
-                try {
-                  await api("/auth/logout", { method: "POST" });
+          )}
+
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "8px" }}>
+            <button className="button primary" disabled={profileSaving}>
+              {profileSaving ? "Saving profile…" : "Save Profile Details"}
+            </button>
+            {!user && (
+              <Link to="/login" className="button secondary">
+                Sign in to sync across devices
+              </Link>
+            )}
+          </div>
+        </form>
+      </section>
+
+      {/* Notifications & System Preferences */}
+      {user ? (
+        <div className="two-column">
+          <form
+            className="info-panel form-stack"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await api("/preferences", {
+                  method: "PUT",
+                  body: JSON.stringify(preferences),
+                });
+                toast("Preferences saved.");
+              } catch (error) {
+                toast((error as Error).message);
+              }
+            }}
+          >
+            <h2>In-app notifications</h2>
+            {[
+              "reports",
+              "case_updates",
+              "actions",
+              "evidence_requests",
+              "biodiversity",
+            ].map((k) => (
+              <label className="checkbox-row" key={k}>
+                <input
+                  type="checkbox"
+                  checked={preferences[k] !== false}
+                  onChange={(e) =>
+                    setPreferences({ ...preferences, [k]: e.target.checked })
+                  }
+                />
+                {k.replaceAll("_", " ")}
+              </label>
+            ))}
+            <label>
+              Delivery preference
+              <select
+                value={preferences.digest || "immediate"}
+                onChange={(e) =>
+                  setPreferences({ ...preferences, digest: e.target.value })
+                }
+              >
+                <option value="immediate">As events are recorded</option>
+                <option value="daily">Daily digest</option>
+              </select>
+            </label>
+            <div className="date-pair">
+              <label>
+                Quiet from (Asia/Kolkata)
+                <input
+                  type="time"
+                  value={preferences.quiet_start || ""}
+                  onChange={(e) =>
+                    setPreferences({
+                      ...preferences,
+                      quiet_start: e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Quiet until (Asia/Kolkata)
+                <input
+                  type="time"
+                  value={preferences.quiet_end || ""}
+                  onChange={(e) =>
+                    setPreferences({ ...preferences, quiet_end: e.target.value })
+                  }
+                />
+              </label>
+            </div>
+            <button className="button primary">Save preferences</button>
+          </form>
+
+          <aside>
+            <div className="info-panel">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>{user.name}</h3>
+                  <p style={{ margin: "4px 0", color: "#d97706", fontWeight: 600 }}>@{user.username || user.email.split("@")[0]}</p>
+                  <p style={{ margin: "2px 0 8px", color: "#64748b", fontSize: "13px" }}>{user.email}</p>
+                </div>
+                <Badge>{user.role.replaceAll("_", " ")}</Badge>
+              </div>
+              {user.age && (
+                <p style={{ fontSize: "13px", color: "#475569", margin: "6px 0" }}>
+                  Age: <strong>{user.age}</strong> years old
+                </p>
+              )}
+              <p style={{ fontSize: "12px", color: "#64748b", marginTop: "12px" }}>
+                Account-scoped offline drafts remain on this device. Synced records remain in the database.
+              </p>
+              <button
+                className="button secondary"
+                style={{ marginTop: "12px" }}
+                onClick={async () => {
+                  try {
+                    await api("/auth/logout", { method: "POST" });
+                  } catch (error) {
+                    toast((error as Error).message);
+                  }
+                  setUser(null);
                   await refresh();
                   navigate("/login");
-                } catch (error) {
-                  toast((error as Error).message);
-                }
-              }}
-            >
-              <LogOut size={16} />
-              Sign out
-            </button>
-          </div>
-          <div className="info-panel">
-            <h3>Optional delivery channels</h3>
-            <p>Email: unavailable — adapter not configured.</p>
-            <p>
-              Browser push: unavailable — adapter not configured or consented.
-            </p>
-            <p className="fine-print">
-              AquaRelay does not claim external delivery from in-app updates.
-            </p>
-          </div>
-        </aside>
-      </div>
+                }}
+              >
+                <LogOut size={16} />
+                Sign out
+              </button>
+            </div>
+            <div className="info-panel">
+              <h3>Optional delivery channels</h3>
+              <p>Email: unavailable — adapter not configured.</p>
+              <p>Browser push: unavailable — adapter not configured or consented.</p>
+              <p className="fine-print">
+                AquaRelay does not claim external delivery from in-app updates.
+              </p>
+            </div>
+          </aside>
+        </div>
+      ) : (
+        <div className="info-panel" style={{ textAlign: "center", padding: "30px" }}>
+          <h3>Sign in to configure notification preferences</h3>
+          <p style={{ color: "#64748b", maxWidth: "500px", margin: "8px auto 18px" }}>
+            Sign in with a registered account or 1-click demo to configure real-time alert digests and quiet hours.
+          </p>
+          <Link to="/login" className="button primary">
+            Sign in to AquaRelay
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
