@@ -55,7 +55,7 @@ import {
 import { api, setCsrf } from "./api";
 import { useSession } from "./session";
 import { useToast, PageHeader, Empty, Badge, formatDate, Modal } from "./ui";
-import type { WaterBody, Passport, RecordedEvent, User } from "./types";
+import type { WaterBody, MapWaterBody, Passport, RecordedEvent, User } from "./types";
 const LazyMap = lazy(() => import("./MapView"));
 function MapUnavailable() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -99,7 +99,7 @@ class MapBoundary extends Component<
   }
 }
 function MapView(props: {
-  items: WaterBody[];
+  items: MapWaterBody[];
   selected?: string;
   onSelect: (id: string) => void;
   compact?: boolean;
@@ -283,6 +283,12 @@ export function ExplorePage() {
   }).toString();
   const registry = useRegistry(query);
   const items = registry.data?.items || [];
+  const fullMap = !state && !availability && !from && !to;
+  const mapRegistry = useQuery({
+    queryKey: ['waterbodies','map',search,type],
+    queryFn: () => api<{items:MapWaterBody[];total:number;truncated:boolean}>(`/waterbodies/map?${new URLSearchParams({q:search,type})}`),
+    enabled:fullMap && mode==='map',
+  });
   const passport = useQuery({
     queryKey: ["passport", selected],
     queryFn: () => api<Passport>(`/waterbodies/${selected}`),
@@ -464,7 +470,7 @@ export function ExplorePage() {
           </div>
         </section>
         <section className={`map-region ${mode === "list" ? "list-mode" : ""}`}>
-          <MapView items={items} selected={selected} onSelect={setSelected} />
+          {fullMap && mode==='map' ? <><QueryState loading={mapRegistry.isPending} error={mapRegistry.error as Error|null}/>{mapRegistry.data && <MapView items={mapRegistry.data.items} selected={selected} onSelect={setSelected}/>} {mapRegistry.data?.truncated && <p className="fine-print">Map limited to 2,000 matches. Search to narrow the results.</p>}</> : <MapView items={items} selected={selected} onSelect={setSelected} />}
           {!selected && (
             <div className="map-intro">
               <span className="small-icon">

@@ -12,7 +12,7 @@ import {
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { LocateFixed, Maximize2, Layers, Info } from "lucide-react";
-import type { WaterBody } from "./types";
+import type { MapWaterBody as WaterBody } from "./types";
 setWorkerUrl(workerUrl);
 const realMap: StyleSpecification = {
   version: 8,
@@ -250,6 +250,7 @@ export default function MapView({
       markers = [];
       if (instance.getZoom() > 12) {
         items.forEach((w) => {
+          if (!instance.getBounds().contains([w.longitude,w.latitude])) return;
           const button = document.createElement("button");
           button.className = "map-place-label";
           button.textContent = w.name;

@@ -3,6 +3,7 @@ import { Copy, Download, ExternalLink, Share2 } from "lucide-react";
 import { Modal, useToast } from "../ui";
 import { date, errorText, label, Notice, useRecord } from "./workflowShared";
 import { aggregateReviewLabel } from "./shareLabels";
+import {selectedSocialHandles,type SocialAccount} from './socialAccounts';
 
 type Water = {
   id: string;
@@ -74,6 +75,10 @@ export default function ShareModal({
     [error, setError] = useState("");
   const [snapshotAt, setSnapshotAt] = useState(() => new Date().toISOString()),
     [captionEdited, setCaptionEdited] = useState(false);
+  const [selectedAccounts,setSelectedAccounts]=useState<string[]>([]);
+  const accounts=useRecord<{items:SocialAccount[]}>(`/api/v1/waterbodies/${waterbody.id}/social-accounts`,open);
+  const approvedAccounts=accounts.loading||accounts.error?[]:accounts.data?.items||[];
+  const chosenHandles=selectedSocialHandles(approvedAccounts,selectedAccounts);
   const sources = useRecord<{
     waterbody: { id: string };
     sources: { id: string; name: string; attribution?: string }[];
@@ -134,12 +139,13 @@ export default function ShareModal({
   } catch {
     /* local preview */
   }
-  const finalCaption = `${synthetic ? "[SYNTHETIC DEMO — fictional data]\n" : ""}${caption}\n${reviewLabel}.\nSource: ${attribution}. Snapshot generated ${date(snapshotAt)} (Asia/Kolkata).${publicUrl ? `\n${permalink}` : "\nLocal demonstration; public address is not configured."}`;
+  const finalCaption = `${synthetic ? "[SYNTHETIC DEMO — fictional data]\n" : ""}${caption}${chosenHandles.length?'\nSelected handles: '+chosenHandles.join(' '):''}\n${reviewLabel}.\nSource: ${attribution}. Snapshot generated ${date(snapshotAt)} (Asia/Kolkata).${publicUrl ? `\n${permalink}` : "\nLocal demonstration; public address is not configured."}`;
   useEffect(() => {
     if (open) {
       setCaptionEdited(false);
       setSnapshotAt(new Date().toISOString());
       setError("");
+      setSelectedAccounts([]);
     }
   }, [open, waterbody.id, caseRecord?.id, update]);
   useEffect(() => {
@@ -419,6 +425,17 @@ export default function ShareModal({
               demonstration; no public QR is generated.
             </Notice>
           )}
+          <div className="info-panel">
+            <h3>Optional organisation handles</h3>
+            <p className="wf-muted">Profiles reviewed by a platform administrator against the linked source. Choose up to five; selected handles are appended to your caption.</p>
+            {accounts.loading&&<p>Loading reviewed profiles…</p>}
+            {accounts.error&&<Notice error>{accounts.error}</Notice>}
+            {!accounts.loading&&!accounts.error&&!approvedAccounts.length&&<p>No reviewed account is recorded for this water body.</p>}
+            {approvedAccounts.map(account=><div key={account.id}>
+              <label><input type="checkbox" checked={selectedAccounts.includes(account.id)} disabled={!selectedAccounts.includes(account.id)&&selectedAccounts.length>=5} onChange={event=>setSelectedAccounts(previous=>event.target.checked?[...previous,account.id]:previous.filter(id=>id!==account.id))}/> {account.organisation_name} · @{account.handle} ({account.platform})</label>
+              <p className="fine-print"><a href={account.account_url} target="_blank" rel="noreferrer">Profile</a> · <a href={account.verification_source} target="_blank" rel="noreferrer">Verification source</a> · Reviewed {date(account.verified_at)}</p>
+            </div>)}
+          </div>
           <div className="wf-button-grid">
             <button
               className="wf-button secondary"

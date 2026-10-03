@@ -9,6 +9,7 @@ export interface User {
   username?: string;
   age?: number | null;
 }
+export type MapWaterBody = Pick<WaterBody, 'id' | 'name' | 'type' | 'latitude' | 'longitude' | 'geometry' | 'case_count' | 'synthetic'>;
 export interface WaterBody {
   id: string;
   name: string;

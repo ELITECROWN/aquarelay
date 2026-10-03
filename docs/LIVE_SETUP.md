@@ -1,8 +1,8 @@
 # AquaRelay: live setup and feature status
 
-Launch region: Bengaluru. Existing accounts: GitHub and Render. The implementation uses one Render web service for React, FastAPI and the durable SQL worker, plus Supabase PostgreSQL/PostGIS and private media storage. This avoids separate-site session/cookie routing problems. No paid OpenAI subscription, Google Maps key or paid push provider is required.
+Launch region: Bengaluru. Existing accounts: GitHub and Render. The live frontend is https://aquarelay.vercel.app; FastAPI and the durable SQL worker run at https://aquarelay-api.onrender.com. PostgreSQL/PostGIS runs on Neon; Supabase provides the private evidence bucket. Same-origin frontend API routing handles browser sessions. No paid OpenAI subscription, Google Maps key or paid push provider is required.
 
-**This is deployment preparation, not proof of an already live production service.** Cloud credentials, real delivery tests, PostgreSQL concurrency checks, backup restoration and institutional participation still need validation. Free Render compute sleeps and has an ephemeral filesystem; scheduled jobs resume from PostgreSQL after wake-up. Do not promise immediate notifications while it sleeps. Supabase free projects can pause after inactivity. See [Render free-service limits](https://render.com/docs/free) and [Supabase pausing](https://supabase.com/docs/guides/platform/free-project-pausing).
+**The website is live, with demo mode disabled and 868 source-linked OSM starter features imported. This is not a claim that all production acceptance checks are complete.** Cloud credentials, real delivery tests, PostgreSQL concurrency checks, backup restoration and institutional participation still need validation. Free Render compute sleeps and has an ephemeral filesystem; scheduled jobs resume from PostgreSQL after wake-up. Do not promise immediate notifications while it sleeps. Supabase free projects can pause after inactivity. See [Render free-service limits](https://render.com/docs/free) and [Supabase pausing](https://supabase.com/docs/guides/platform/free-project-pausing).
 
 ## What you need to do
 
@@ -78,7 +78,7 @@ This prints the count without altering a database. `--commit` imports into the e
 | 22 | Missing evidence assistant | Record-linked workflow checklist and manager-reviewed request draft | Reviewer sends appropriate request; no automatic hazardous sampling instructions |
 | 23 | Knowledge graph and retrieval | Relational entities/relationships and cited record search | Populate documented relations; arbitrary multi-hop question answering is not implemented |
 | 24 | Sharing/public awareness | Factual cards, PNG downloads, captions, links and supported native share | HTTPS/share test; automatic Instagram publishing is not implemented or claimed |
-| 25 | Authority tagging | No automatic tagging or fabricated official accounts | Verified social-account suggestion UI and verification workflow still need completion; obtain authoritative accounts first |
+| 25 | Authority tagging | No automatic tagging or fabricated official accounts | Administrator approval/revocation and optional share-caption selection implemented; obtain independently documented real accounts before approval |
 | 26 | Before/after stories | Persisted distinct public photos, dated capture times and explanation | Managers save real comparable photos; dates are contributor assertions |
 | 27 | Organisation workspace | Scoped incidents, review, evidence requests, notes, actions, connectors; new registry/field interface | Administrator verifies members and assigns organisation responsibility |
 | 28 | Offline capture | Account-scoped IndexedDB drafts, stable retry, production shell cache | Real HTTPS production offline/reconnect test; no offline third-party map tile download |
@@ -97,11 +97,11 @@ This prints the count without altering a database. `--commit` imports into the e
 - Institutional notification is not acknowledgement. Obtain a real recipient endpoint and replay/idempotency receipt contract, then test authentication, retries and acknowledgement separately.
 - Complete the specifically marked partial features; do not relabel them complete because the main website deploys.
 
-The deployment configuration is included in this source revision. Public cloud deployment remains unverified. No production user data or external email was sent during implementation.
+The deployment configuration is included in this source revision. Frontend and backend are deployed; readiness and registry endpoints have been verified. No production user data or external email was sent during implementation.
 
 Email alternative: Mailjet's HTTPS API supports a verified sender email, with a free allowance of 200 messages/day and 6,000/month. Set MAILJET_API_KEY, MAILJET_SECRET_KEY and EMAIL_FROM in Render. Provider verification is required. Render free hosting blocks SMTP ports, so Gmail SMTP is unsuitable. See https://dev.mailjet.com/docs/email-api/getting-started/send-first-email and https://render.com/docs/free .
 
-Map: real OpenStreetMap tiles, visible attribution and a device-location marker are implemented. Geolocation needs HTTPS or localhost, browser permission and device location services. Desktop location can be approximate. No map API key is required. Public tiles have usage limits; configure VITE_MAP_TILE_URL for a different provider when traffic grows. Bengaluru registry downloads have timed out; no real snapshot has been imported yet.
+Map: real OpenStreetMap tiles, visible attribution and a device-location marker are implemented. Geolocation needs HTTPS or localhost, browser permission and device location services. Desktop location can be approximate. No map API key is required. Public tiles have usage limits; configure VITE_MAP_TILE_URL for a different provider when traffic grows. The 3 October OSM snapshot was imported: 868 explicitly classified features. These are starter identities, not 868 independently verified unique water bodies.
 
 
 
@@ -109,5 +109,8 @@ Local verification on 3 October 2026: production frontend build passed; 16 front
 
 Design constraint: preserve the existing PureFlow hero, section structure, animations, capsule navigation and tracking-card layout. Record-backed content replaces fabricated claims; no alternate landing-page redesign is included.
 
-Live storage verification on 3 October 2026: Render service aquarelay-api deployed commit 6c84f2c with Supabase private storage. A tiny explicitly synthetic image uploaded successfully; its owner downloaded the exact original; anonymous original access and direct public bucket access were denied; deletion succeeded and subsequent owner download returned 410. Both agent-created verification images were removed. Backend regression suite: 91 passed, 2 PostgreSQL concurrency tests skipped. The public website still reports demo_mode=true; registry launch, real admin provisioning, email/push setup, backup restore and remaining feature gaps are still pending. Website design unchanged.
+Live storage verification on 3 October 2026: Render service aquarelay-api deployed commit 6c84f2c with Supabase private storage. A tiny explicitly synthetic image uploaded successfully; its owner downloaded the exact original; anonymous original access and direct public bucket access were denied; deletion succeeded and subsequent owner download returned 410. Both agent-created verification images were removed. Backend regression suite: 91 passed, 2 PostgreSQL concurrency tests skipped. Historical storage verification preceded the production registry launch. Demo mode is now false; real admin provisioning, push setup, backup restore and remaining acceptance gaps are pending. The user chose to omit email delivery. Website design unchanged.
 
+
+
+Latest verification (4 October 2026): frontend production build and 19 unit tests passed; backend 108 passed, two disposable-PostgreSQL tests skipped. Case routing preserves acknowledgement state, records assignment provenance and supports an unassigned queue. Administrator social-account review and revocation support explicit optional handle selection. These controls require a real administrator and documented organisations; no authority profiles were fabricated. Map API returns the complete registry independently of the 50-record list page. Earlier dated verification sections describe historical milestones.

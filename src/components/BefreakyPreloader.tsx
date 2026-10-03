@@ -65,15 +65,15 @@ export default function BefreakyPreloader() {
       <div className="preloader__stickers__container">
         <div className="preloader-floating-badge badge-1">
           <Droplet size={14} className="text-emerald-600" />
-          <span>REAL-TIME TELEMETRY</span>
+          <span>WATER-BODY RECORDS</span>
         </div>
         <div className="preloader-floating-badge badge-2">
           <ShieldCheck size={14} className="text-emerald-700" />
-          <span>AUTHORITY DISPATCH</span>
+          <span>INCIDENT HISTORY</span>
         </div>
         <div className="preloader-floating-badge badge-3">
           <Sparkles size={14} className="text-emerald-500" />
-          <span>GPS-VERIFIED FORENSICS</span>
+          <span>COMMUNITY EVIDENCE</span>
         </div>
       </div>
 

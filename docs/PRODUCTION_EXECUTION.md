@@ -17,7 +17,7 @@ Keep React, FastAPI, SQLAlchemy, PostgreSQL/PostGIS, the SQL outbox, and account
 Real failures stay failures. Reports and evidence survive restart. Scope and authorisation are checked server-side. Closure uses real support. Each UI route loads. Offline pending reports retry with stable identities. External adapters have contract tests and require real credentials before live verification. PostgreSQL, backup restore, cloud deployment and partner endpoints are only labelled verified after actual execution.
 
 ## External setup
-Use existing GitHub and Render accounts, Supabase free PostgreSQL/storage, Render free pilot compute, optional Gemini free tier and Mailjet HTTPS or Resend free tier. Account creation, DNS ownership, real source data and actual institutional recipients require the user's participation. Free plans do not promise continuous worker operation or production availability guarantees.
+Use existing GitHub and Render accounts, Neon PostgreSQL/PostGIS and Supabase private storage, Render free pilot compute, optional Gemini free tier and Mailjet HTTPS or Resend free tier. Account creation, DNS ownership, real source data and actual institutional recipients require the user's participation. Free plans do not promise continuous worker operation or production availability guarantees.
 
 Local verification: frontend build, 16 frontend tests, 88 backend tests; two PostgreSQL tests require an external database. Eight browser scenarios passed across the restored-design run and a targeted account-navigation selector rerun. Real OSM basemap and device location are implemented. Registry download, cloud deployment, real provider delivery and partner endpoints remain pending. See LIVE_SETUP.md for the feature matrix.
 
@@ -32,3 +32,12 @@ Local verification: frontend build, 16 frontend tests, 88 backend tests; two Pos
 - Pagination: SQL search/type filtering and page selection precede record aggregation for ordinary searches. Advanced history and distance filters still need further optimisation.
 - Required user input: first administrator email and direct password entry in Render. Do not infer ownership from third-party account details.
 - Remaining acceptance: actual production migration/import, admin, live push, off-site backup/restore, PostgreSQL concurrency checks, partner integrations, authority suggestions, multilingual validation and operational ownership.
+
+
+## Verified launch and next batch — 4 October 2026
+
+Production launch succeeded with python -m app.launch: migrations and PostGIS readiness passed; demo mode is false; 868 OSM starter features imported. Frontend remains on Vercel, backend on Render, database on Neon, media on Supabase. Temporary adoption and import flags were disabled after launch.
+
+Complete-map API, demo-notification isolation, administrator unassigned-case routing with source provenance, organisation profile approval/revocation and explicit optional sharing handles are implemented. Existing presentation is retained. Verification: 108 backend tests passed, two PostgreSQL-specific tests skipped; 19 frontend tests and production build passed. Four targeted map/presentation browser scenarios reported passing; Windows server teardown needed interruption.
+
+Still required: first administrator email and password entered directly in Render; real organisation/manager setup; documented profiles/partner endpoints; optional browser push credentials; separate-database concurrency and backup/restore checks. Email remains intentionally unconfigured at the user request.
