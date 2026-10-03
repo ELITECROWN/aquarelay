@@ -8,13 +8,16 @@ import {
   Bell,
   Building2,
   Leaf,
-  HelpCircle,
-  ChevronDown,
+  Settings,
   Waves,
   X,
-  ArrowRight,
+  User,
+  ChevronRight,
+  LogOut,
+  LogIn,
 } from "lucide-react";
 import { useSession } from "../session";
+import { api } from "../api";
 
 export function openSideMenuDrawer() {
   window.dispatchEvent(new CustomEvent("aquarelay-open-drawer"));
@@ -22,11 +25,11 @@ export function openSideMenuDrawer() {
 
 const MENU_OPTIONS = [
   { to: "/", title: "Home", icon: Home },
-  { to: "/dispatch-tracker", title: "Track", icon: Truck },
-  { to: "/explore", title: "Explore waters", icon: Compass },
-  { to: "/report", title: "Report observation", icon: Plus },
-  { to: "/notifications", title: "Updates", icon: Bell },
-  { to: "/workspace", title: "Case workspace", icon: Building2 },
+  { to: "/dispatch-tracker", title: "Track Dispatches", icon: Truck },
+  { to: "/explore", title: "Explore Waters", icon: Compass },
+  { to: "/report", title: "Report Observation", icon: Plus, badge: "+ Report" },
+  { to: "/notifications", title: "Updates & Alerts", icon: Bell },
+  { to: "/workspace", title: "Case Workspace", icon: Building2 },
   { to: "/organisations", title: "Organisations", icon: Leaf },
 ];
 
@@ -34,7 +37,7 @@ export default function SideMenuDrawer(props?: {
   isOpen?: boolean;
   onClose?: () => void;
 }) {
-  const { user } = useSession();
+  const { user, refresh } = useSession();
   const location = useLocation();
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -76,21 +79,24 @@ export default function SideMenuDrawer(props?: {
         aria-hidden="true"
       />
 
-      {/* Slide-out Drawer with IDENTICAL Sidebar Design */}
+      {/* Slide-out Drawer */}
       <aside
-        className={`side-menu-drawer sidebar ${isOpen ? "drawer-open" : ""}`}
-        aria-label="Lake Watchdog Navigation"
+        className={`side-menu-drawer pureflow-wide-drawer ${isOpen ? "drawer-open" : ""}`}
+        aria-label="AquaRelay Navigation"
       >
+        {/* Drawer Header with Logo & Close button */}
         <div className="drawer-header">
           <div
             className="brand logo-clickable"
             onClick={handleClose}
-            title="Close menu"
+            title="AquaRelay Home"
           >
             <span className="brand-mark pureflow-mark">
-              <Waves size={22} />
+              <Waves size={20} />
             </span>
-            <span className="pureflow-drawer-title">AquaRelay<span className="brand-period">.</span></span>
+            <span className="pureflow-drawer-title">
+              AquaRelay<span className="brand-period">.</span>
+            </span>
           </div>
           <button
             type="button"
@@ -98,23 +104,39 @@ export default function SideMenuDrawer(props?: {
             aria-label="Close navigation menu"
             onClick={handleClose}
           >
-            <X size={18} />
+            <X size={19} />
           </button>
         </div>
 
-        {/* Featured Impact Card from PureFlow Theme */}
-        <div className="drawer-feature-card">
-          <span className="feature-eyebrow">
-            <span className="feature-amber-dot" /> OUR MISSION
-          </span>
-          <h4>Building Systems That Last for Generations.</h4>
-          <p>Access to safe water is the foundation for healthy, thriving communities.</p>
-          <Link to="/explore" onClick={handleClose} className="drawer-feature-link">
-            Explore Catchments <ArrowRight size={13} />
+        {/* Profile Section at Top with Settings & Profile Logo */}
+        <div className="drawer-profile-card">
+          <div className="drawer-profile-main">
+            <span className="drawer-profile-avatar">
+              {user?.name ? (
+                user.name.charAt(0).toUpperCase()
+              ) : (
+                <User size={19} />
+              )}
+            </span>
+            <div className="drawer-profile-info">
+              <span className="drawer-profile-name">{user?.name || "Public Visitor"}</span>
+              <span className="drawer-profile-role">
+                {user?.role ? user.role.replaceAll("_", " ") : "Citizen Watchdog"}
+              </span>
+            </div>
+          </div>
+          <Link
+            to="/settings"
+            className="drawer-settings-btn"
+            onClick={handleClose}
+            title="Settings & Preferences"
+            aria-label="Settings"
+          >
+            <Settings size={18} />
           </Link>
         </div>
 
-        {/* Navigation List: PureFlow Pill Style */}
+        {/* Navigation List: High-contrast Yellow Theme */}
         <nav className="pureflow-drawer-nav" aria-label="Main navigation">
           {MENU_OPTIONS.map((item) => {
             const Icon = item.icon;
@@ -126,38 +148,46 @@ export default function SideMenuDrawer(props?: {
                 className={`drawer-nav-item ${isActive ? "active" : ""}`}
                 onClick={handleClose}
               >
-                <Icon size={18} />
-                <span>{item.title}</span>
-                {item.to === "/report" && <span className="drawer-plus-badge">+ Report</span>}
+                <span className="drawer-nav-icon-box">
+                  <Icon size={18} />
+                </span>
+                <span className="drawer-nav-title">{item.title}</span>
+                {item.badge && (
+                  <span className="drawer-plus-badge">{item.badge}</span>
+                )}
+                <ChevronRight size={15} className="drawer-nav-arrow" />
               </Link>
             );
           })}
         </nav>
 
-        <div className="sidebar-bottom drawer-footer-pureflow">
-          <Link
-            className="help-link"
-            to="/settings"
-            onClick={handleClose}
-          >
-            <HelpCircle size={17} />
-            <span>Account & preferences</span>
-          </Link>
-          <Link
-            to={user ? "/settings" : "/login"}
-            className="account drawer-account"
-            onClick={handleClose}
-          >
-            <span className="avatar amber-avatar">{user ? user.name.charAt(0) : "G"}</span>
-            <span>
-              <strong>{user?.name || "Public visitor"}</strong>
-              <small>
-                {user?.role.replaceAll("_", " ") ||
-                  "Explore without an account"}
-              </small>
-            </span>
-            <ChevronDown size={15} />
-          </Link>
+        {/* Drawer Bottom Actions */}
+        <div className="drawer-bottom-card">
+          {user ? (
+            <button
+              type="button"
+              className="drawer-session-btn"
+              onClick={async () => {
+                try {
+                  await api("/auth/logout", { method: "POST" });
+                  await refresh();
+                } catch {}
+                handleClose();
+              }}
+            >
+              <LogOut size={16} />
+              <span>Sign out</span>
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="drawer-session-btn"
+              onClick={handleClose}
+            >
+              <LogIn size={16} />
+              <span>Sign in / Access Org</span>
+            </Link>
+          )}
         </div>
       </aside>
     </>

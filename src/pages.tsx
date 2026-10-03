@@ -1602,8 +1602,8 @@ export function NotificationsPage() {
             marginBottom: "20px",
             padding: "14px 18px",
             borderRadius: "12px",
-            background: "rgba(255, 255, 255, 0.75)",
-            border: "1px solid rgba(116, 196, 118, 0.35)",
+            background: "rgba(254, 243, 199, 0.9)",
+            border: "1px solid rgba(245, 158, 11, 0.4)",
             flexWrap: "wrap",
           }}
         >
@@ -1613,11 +1613,11 @@ export function NotificationsPage() {
                 width: "8px",
                 height: "8px",
                 borderRadius: "50%",
-                background: "#74C476",
-                boxShadow: "0 0 8px #74C476",
+                background: "#f59e0b",
+                boxShadow: "0 0 8px #f59e0b",
               }}
             />
-            <span style={{ fontSize: "13px", fontWeight: "500", color: "#192e1d" }}>
+            <span style={{ fontSize: "13px", fontWeight: "600", color: "#1c1917" }}>
               Viewing real-time public waterbody updates and automated authority dispatches.
             </span>
           </div>
