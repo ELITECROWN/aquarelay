@@ -19,6 +19,11 @@ hasher = PasswordHasher()
 COOKIE = "aquarelay_session"
 SECURE_COOKIE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
 
+def account_available(user):
+    if not user or user.data.get('disabled_at'):
+        return False
+    return os.getenv('DEMO_MODE', 'true').lower() == 'true' or not user.email.lower().endswith('@demo.aquarelay.local')
+
 def lock_usernames(db):
     # Production accounts serialize uniqueness checks until commit on PostgreSQL.
     if db.bind.dialect.name=='postgresql':db.execute(text("SELECT pg_advisory_xact_lock(hashtext('aquarelay:usernames'))"))
@@ -37,6 +42,10 @@ def session_record(request, db):
         return None
     row = db.scalar(select(LoginSession).where(LoginSession.token_hash == token_hash(token)))
     if row and row.expires_at > utcnow():
+        if row.user_id and not account_available(db.get(User, row.user_id)):
+            db.delete(row)
+            db.commit()
+            return None
         return row
     return None
 
@@ -103,7 +112,7 @@ def login(body: Credentials, request: Request, response: Response, db: Session =
     validate_csrf(request, db)
     user = db.scalar(select(User).where(User.email == body.email.lower().strip()))
     try:
-        valid = user and hasher.verify(user.password_hash, body.password)
+        valid = account_available(user) and hasher.verify(user.password_hash, body.password)
     except (VerifyMismatchError, InvalidHashError):
         valid = False
     if not valid:
@@ -124,6 +133,8 @@ def register(body: Registration, request: Request, response: Response, db: Sessi
     validate_csrf(request, db)
     lock_usernames(db)
     email = body.email.lower().strip()
+    if os.getenv('DEMO_MODE', 'true').lower() != 'true' and email.endswith('@demo.aquarelay.local'):
+        raise HTTPException(422, 'Use a real account email; this domain is reserved for demonstrations.')
     if "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(422, "Enter a valid email address.")
     if db.scalar(select(User.id).where(User.email == email)):
@@ -232,7 +243,7 @@ def request_recovery(body:RecoveryRequest,db:Session=Depends(get_db)):
     from .mail import configured
     if not configured():raise HTTPException(503,'Account email is not configured. Contact the platform administrator.')
     user=db.scalar(select(User).where(User.email==body.email.strip().lower()))
-    if user:queue_account_email(db,user,'recovery');db.commit()
+    if account_available(user):queue_account_email(db,user,'recovery');db.commit()
     return {'message':'If this account exists, a recovery email will be queued.'}
 
 class ResetPassword(BaseModel):
@@ -241,7 +252,7 @@ class ResetPassword(BaseModel):
 
 def consume_token(db,token,kind):
     user=db.scalar(select(User).where(User.id==token.split('.',1)[0]).with_for_update())
-    record=user.data.get(kind,{}) if user else {}
+    record=user.data.get(kind,{}) if account_available(user) else {}
     if not record.get('hash') or record.get('expires_at','')<utcnow() or not hmac.compare_digest(record['hash'],token_hash(token)):raise HTTPException(422,'Link is invalid, expired or already used. Request a new email.')
     user.data={k:v for k,v in user.data.items() if k!=kind}
     return user

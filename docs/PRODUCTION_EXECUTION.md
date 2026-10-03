@@ -20,3 +20,15 @@ Real failures stay failures. Reports and evidence survive restart. Scope and aut
 Use existing GitHub and Render accounts, Supabase free PostgreSQL/storage, Render free pilot compute, optional Gemini free tier and Mailjet HTTPS or Resend free tier. Account creation, DNS ownership, real source data and actual institutional recipients require the user's participation. Free plans do not promise continuous worker operation or production availability guarantees.
 
 Local verification: frontend build, 16 frontend tests, 88 backend tests; two PostgreSQL tests require an external database. Eight browser scenarios passed across the restored-design run and a targeted account-navigation selector rerun. Real OSM basemap and device location are implemented. Registry download, cloud deployment, real provider delivery and partner endpoints remain pending. See LIVE_SETUP.md for the feature matrix.
+
+## Sequential launch work — 3 October 2026
+
+- User chose to omit external email delivery. In-app updates remain; email recovery and verification controls must clearly show unavailable. Do not provision Mailjet.
+- Production boundary: block reserved demonstration-domain logins, invalidate their existing sessions on use, hide synthetic ORM records and reject reserved-domain registration. Preserve records; do not truncate tables.
+- Registry: downloaded the actual OSM snapshot; 868 explicitly classified starter identities accepted from 4,908 raw features. Source snapshot, attribution and limitations committed under backend/registry. Import remains pending until the production launcher is deployed.
+- Database: existing Render connection hostname identifies Neon, not Render Free Postgres or Supabase Database. Supabase is the private media provider. No credential values were logged.
+- Startup: explicit ADOPT_EXISTING_SCHEMA=true permits only strict baseline adoption, followed by immutable migrations. No destructive reset. Disable this temporary flag after successful launch.
+- Added /ready with actual database-table, migration-version and PostGIS checks. It does not claim live email, push, backups or partner connectivity.
+- Pagination: SQL search/type filtering and page selection precede record aggregation for ordinary searches. Advanced history and distance filters still need further optimisation.
+- Required user input: first administrator email and direct password entry in Render. Do not infer ownership from third-party account details.
+- Remaining acceptance: actual production migration/import, admin, live push, off-site backup/restore, PostgreSQL concurrency checks, partner integrations, authority suggestions, multilingual validation and operational ownership.

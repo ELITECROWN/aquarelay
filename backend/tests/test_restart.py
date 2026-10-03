@@ -73,6 +73,20 @@ def test_unversioned_demo_schema_adoption_checks_match_and_keeps_records():
     with Session(candidate) as db:
         assert db.scalar(select(func.count()).select_from(WaterBody))==7
 
+def test_baseline_signature_normalises_postgres_constraint_backing_indexes():
+    from sqlalchemy import inspect,create_engine
+    from app.db import Base
+    from app import models
+    from app.migrate import signature
+    engine=create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
+    actual=inspect(engine)
+    class PostgresIndexes:
+        def __getattr__(self,name):return getattr(actual,name)
+        def get_indexes(self,table):
+            return actual.get_indexes(table)+[{'name':'users_email_key','column_names':['email'],'unique':True,'duplicates_constraint':'users_email_key'}]
+    assert signature(PostgresIndexes(),'users')==signature(actual,'users')
+
 
 def test_interrupted_empty_version_table_is_adopted_only_after_baseline_check():
     from sqlalchemy import create_engine,text,select,func

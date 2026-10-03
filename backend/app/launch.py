@@ -15,10 +15,9 @@ def validate_environment(env):
     if not env.get('PUBLIC_URL','').startswith('https://'):errors.append('PUBLIC_URL must use HTTPS')
     if errors:raise ValueError('; '.join(errors))
 
-def main():
-    validate_environment(os.environ)
+def prepare_database():
     from .migrate import migrate
-    migrate()
+    migrate(adopt_existing=os.getenv('ADOPT_EXISTING_SCHEMA','false').lower()=='true')
     from .bootstrap import from_environment
     from_environment()
     if os.getenv('REGISTRY_STARTER_PATH'):
@@ -28,6 +27,10 @@ def main():
         from .db import SessionLocal
         payload=json.loads(Path(os.environ['REGISTRY_STARTER_PATH']).read_text(encoding='utf-8'))
         with SessionLocal() as db:import_registry(db,payload)
+
+def main():
+    validate_environment(os.environ)
+    prepare_database()
     uvicorn.run('app.main:app',host='0.0.0.0',port=int(os.getenv('PORT','8000')),proxy_headers=True,forwarded_allow_ips=os.getenv('FORWARDED_ALLOW_IPS','127.0.0.1'))
 
 if __name__=='__main__':main()

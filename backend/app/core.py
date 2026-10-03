@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select, func, or_,text
+from sqlalchemy import select, func, or_,text,cast,String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import object_session
@@ -48,7 +48,7 @@ def iso(value, end_of_day=False):
 
 def get_record(db, cls, record_id):
     row = db.get(cls, record_id)
-    if not row:
+    if not row or (not DEMO_MODE and getattr(row, 'synthetic', False)):
         raise HTTPException(404, "Record not found.")
     return row
 
@@ -187,6 +187,15 @@ def waterbodies(q: str = "", type: str = "", state: str = "", availability: str 
     start_iso, end_iso = iso(start) if start else None, iso(end,end_of_day=True) if end else None
     items=[]
     statement=select(WaterBody).order_by(WaterBody.name)
+    if not DEMO_MODE: statement=statement.where(WaterBody.synthetic.is_(False))
+    if type: statement=statement.where(WaterBody.type==type)
+    if q:
+        needle=q.lower()
+        statement=statement.where(or_(func.lower(WaterBody.name).contains(needle,autoescape=True),func.lower(WaterBody.locality).contains(needle,autoescape=True),func.lower(cast(WaterBody.aliases,String)).contains(needle,autoescape=True)))
+    if not any((state,availability,start_iso,end_iso)) and lat is None and lon is None and radius is None:
+        total=db.scalar(select(func.count()).select_from(statement.subquery()))
+        rows=db.scalars(statement.offset((page-1)*page_size).limit(page_size))
+        return {"items":[waterbody_json(db,wb) for wb in rows],"total":total,"page":page,"page_size":page_size}
     if radius is not None and (lat is None or lon is None): raise HTTPException(422,"Radius search requires latitude and longitude.")
     if db.bind.dialect.name=="postgresql" and lat is not None and lon is not None and radius is not None:
         statement=statement.where(text("ST_DWithin(geog,ST_SetSRID(ST_MakePoint(:search_lon,:search_lat),4326)::geography,:search_radius)")).params(search_lon=lon,search_lat=lat,search_radius=radius)
@@ -235,6 +244,7 @@ def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = 
     relations=visible(list(db.scalars(select(Relationship).where(Relationship.waterbody_id==wb.id))))
     nearby=[]
     near_statement=select(WaterBody).where(WaterBody.id!=wb.id)
+    if not DEMO_MODE: near_statement=near_statement.where(WaterBody.synthetic.is_(False))
     if db.bind.dialect.name=="postgresql":
         near_statement=near_statement.where(text("ST_DWithin(geog,ST_SetSRID(ST_MakePoint(:near_lon,:near_lat),4326)::geography,5000)")).params(near_lon=wb.longitude,near_lat=wb.latitude)
     for other in db.scalars(near_statement):
@@ -251,6 +261,7 @@ def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = 
 @router.get("/cases")
 def cases(waterbody_id: str="", state: str="", page:int=Query(1,ge=1),page_size:int=Query(50,ge=1,le=100),db:Session=Depends(get_db)):
     stmt=select(Case).order_by(Case.created_at.desc())
+    if not DEMO_MODE: stmt=stmt.where(Case.synthetic.is_(False))
     if waterbody_id: stmt=stmt.where(Case.waterbody_id==waterbody_id)
     if state: stmt=stmt.where(Case.state==state)
     rows=list(db.scalars(stmt))

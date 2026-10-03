@@ -79,6 +79,24 @@ def health():
     with SessionLocal() as db: db.connection().exec_driver_sql("SELECT 1")
     return {"status":"ok","database":engine.dialect.name,"demo_mode":DEMO_MODE}
 
+@app.get('/ready')
+def readiness():
+    try:
+        with SessionLocal() as db:
+            connection=db.connection()
+            for table in ('waterbodies','users','sessions','events','jobs'):
+                connection.exec_driver_sql(f'SELECT 1 FROM {table} LIMIT 0')
+            if not DEMO_MODE:
+                if engine.dialect.name!='postgresql':raise RuntimeError('Production database required')
+                revision=connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar()
+                if revision!='002_postgis_spatial':raise RuntimeError('Migration version mismatch')
+                connection.exec_driver_sql('SELECT PostGIS_Version()')
+                connection.exec_driver_sql('SELECT geog,geom FROM waterbodies LIMIT 0')
+        return {'status':'ready','production':not DEMO_MODE}
+    except Exception:
+        # Never publish connection strings, credentials or database diagnostics.
+        return JSONResponse(status_code=503,content={'status':'unavailable','production':not DEMO_MODE})
+
 static_path=os.getenv("STATIC_PATH")
 if static_path:
     static_root=Path(static_path).resolve()

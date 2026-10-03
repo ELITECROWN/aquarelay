@@ -23,13 +23,16 @@ def candidates(payload):
     results=[]
     for item in payload.get('elements',[]):
         tags=item.get('tags',{})
-        if tags.get('natural')!='water' or tags.get('water') in {'wastewater','salt','bay','sea'}:continue
+        # Unspecified water polygons, drains and engineered basins need review;
+        # they must not silently become lakes in the public registry.
+        water_type=tags.get('water')
+        if tags.get('natural')!='water' or water_type not in {'lake','pond','stream','canal'}:continue
         kind=item.get('type');identity=item.get('id')
         if kind not in {'node','way','relation'} or not isinstance(identity,int):continue
         point=item if kind=='node' else item.get('center',{})
         lat,lon=point.get('lat'),point.get('lon')
         if not isinstance(lat,(int,float)) or not isinstance(lon,(int,float)) or not BBOX[0]<=lat<=BBOX[2] or not BBOX[1]<=lon<=BBOX[3]:continue
-        results.append({'id':f'{kind}-{identity}','name':str(tags.get('name') or tags.get('name:en') or f'Unnamed mapped water body (OSM {kind} {identity})')[:160],'type':'pond' if tags.get('water')=='pond' else 'lake','latitude':lat,'longitude':lon,'aliases':[str(v)[:160] for k,v in tags.items() if k.startswith('name:')],'tags':tags,'osm_type':kind,'osm_id':identity})
+        results.append({'id':f'{kind}-{identity}','name':str(tags.get('name') or tags.get('name:en') or f'Unnamed mapped water body (OSM {kind} {identity})')[:160],'type':water_type,'latitude':lat,'longitude':lon,'aliases':[str(v)[:160] for k,v in tags.items() if k.startswith('name:')],'tags':tags,'osm_type':kind,'osm_id':identity})
     return results
 
 def import_registry(db,payload):

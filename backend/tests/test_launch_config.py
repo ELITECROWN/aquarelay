@@ -12,3 +12,16 @@ def test_launch_accepts_explicit_persistent_environment():
 
 def test_launch_accepts_modern_supabase_secret():
     validate_environment({'DEMO_MODE':'false','DATABASE_URL':'postgresql://redacted','STORAGE_BACKEND':'supabase','SUPABASE_URL':'https://project.supabase.co','SUPABASE_SECRET_KEY':'sb_secret_test','PUBLIC_URL':'https://aquarelay.vercel.app','CORS_ORIGINS':'https://aquarelay.vercel.app'})
+
+def test_startup_adoption_requires_explicit_flag(monkeypatch):
+    from app.launch import prepare_database
+    from app import migrate, bootstrap
+    calls=[]
+    monkeypatch.setattr(migrate,'migrate',lambda **kwargs:calls.append(kwargs))
+    monkeypatch.setattr(bootstrap,'from_environment',lambda:None)
+    monkeypatch.delenv('REGISTRY_STARTER_PATH',raising=False)
+    monkeypatch.delenv('ADOPT_EXISTING_SCHEMA',raising=False)
+    prepare_database()
+    monkeypatch.setenv('ADOPT_EXISTING_SCHEMA','true')
+    prepare_database()
+    assert calls==[{'adopt_existing':False},{'adopt_existing':True}]

@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, with_loader_criteria
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/aquarelay.sqlite")
 if DATABASE_URL.startswith("postgresql://"):
@@ -24,6 +24,15 @@ class Base(DeclarativeBase):
     pass
 
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
+@event.listens_for(SessionLocal, 'do_orm_execute')
+def exclude_demonstration_records(execution):
+    """Keep fixtures for audit, but never mix them into production ORM reads."""
+    if execution.is_select and os.getenv('DEMO_MODE','true').lower()!='true':
+        for mapper in Base.registry.mappers:
+            model=mapper.class_
+            if hasattr(model,'synthetic'):
+                execution.statement=execution.statement.options(with_loader_criteria(model,model.synthetic.is_(False),include_aliases=True))
 
 def get_db():
     with SessionLocal() as db:

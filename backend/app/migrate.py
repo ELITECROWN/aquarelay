@@ -17,7 +17,9 @@ def signature(inspector,table):
     pk=tuple(inspector.get_pk_constraint(table)["constrained_columns"])
     unique={tuple(c["column_names"]) for c in inspector.get_unique_constraints(table)}
     fks={(tuple(c["constrained_columns"]),c["referred_table"],tuple(c["referred_columns"])) for c in inspector.get_foreign_keys(table)}
-    indexes={(i["name"],tuple(i["column_names"]),bool(i["unique"])) for i in inspector.get_indexes(table)}
+    # PostgreSQL reflects a unique constraint's backing index twice, whereas
+    # SQLite exposes it only as a constraint. Compare the constraint once.
+    indexes={(i["name"],tuple(i["column_names"]),bool(i["unique"])) for i in inspector.get_indexes(table) if not i.get('duplicates_constraint')}
     return {"columns":columns,"primary_key":pk,"unique_constraints":unique,"foreign_keys":fks,"indexes":indexes}
 
 def verify_baseline(candidate):

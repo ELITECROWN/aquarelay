@@ -202,7 +202,7 @@ function DemoLabel({ synthetic = false }: { synthetic?: boolean }) {
 function useConfig() {
   return useQuery({
     queryKey: ["config"],
-    queryFn: () => api<{ demo_mode: boolean }>("/config"),
+    queryFn: () => api<{ demo_mode: boolean; capabilities?: { email: string } }>("/config"),
     staleTime: Infinity,
   });
 }
@@ -2217,7 +2217,7 @@ export function LoginPage() {
             </button>
 
             {/* Quick 1-Click Demo Login */}
-            <p><Link to="/account/recovery">Forgot your password?</Link></p>
+            <p>{config.data?.capabilities?.email === 'account_email_configured' ? <Link to="/account/recovery">Forgot your password?</Link> : 'Email password recovery is unavailable. Keep your password securely.'}</p>
             {config.data?.demo_mode && <div className="demo-accounts" style={{ marginTop: "16px", padding: "14px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                 <Badge state="warning">1-CLICK DEMO ACCESS</Badge>
@@ -2565,7 +2565,7 @@ export function SettingsPage() {
             </div>
             <div className="info-panel">
               <h3>Optional delivery channels</h3>
-              <button type="button" className="button secondary" onClick={async()=>{try{const result=await api<{message:string}>('/auth/request-verification',{method:'POST'});toast(result.message);}catch(e){toast((e as Error).message);}}}>Send email verification link</button>
+              {preferences.capabilities?.email !== 'unavailable' && <button type="button" className="button secondary" onClick={async()=>{try{const result=await api<{message:string}>('/auth/request-verification',{method:'POST'});toast(result.message);}catch(e){toast((e as Error).message);}}}>Send email verification link</button>}
               <p>Email: {preferences.capabilities?.email||'unavailable'}</p>
               <PushSettings/>
               <p className="fine-print">

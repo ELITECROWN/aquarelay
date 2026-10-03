@@ -20,3 +20,9 @@ def test_osm_registry_preserves_identity_provenance_and_does_not_create_conditio
 def test_osm_registry_skips_outside_region_and_nonwater_records(client):
     from app.osm_registry import candidates
     assert candidates({'elements':[{'type':'way','id':1,'center':{'lat':20,'lon':77},'tags':{'natural':'water'}},{'type':'node','id':2,'lat':12.97,'lon':77.59,'tags':{'amenity':'cafe'}}]})==[]
+
+def test_osm_does_not_guess_unclassified_water_features_are_lakes():
+    from app.osm_registry import candidates
+    elements=[{'type':'way','id':i,'center':{'lat':12.97,'lon':77.59},'tags':{'natural':'water',**tags}} for i,tags in enumerate([{}, {'water':'drain'}, {'water':'basin'}, {'water':'stream'}, {'water':'pond'}, {'water':'lake'}, {'water':'canal'}],1)]
+    rows=candidates({'elements':elements})
+    assert [(r['id'],r['type']) for r in rows]==[('way-4','stream'),('way-5','pond'),('way-6','lake'),('way-7','canal')]
