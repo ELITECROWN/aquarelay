@@ -323,8 +323,58 @@ export function handleMockRoute<T = any>(path: string, options: RequestInit = {}
     return { waterbodies: [], areas: [] } as T;
   }
 
-  if (route === "/notifications") {
-    return { items: [], unread: 0, scheduled: 0 } as T;
+  if (route.startsWith("/notifications")) {
+    const mockNotifications = [
+      {
+        id: "notif-1",
+        title: "Bellandur Lake Catchment · Patrol Boat Unit #04 Dispatched",
+        description: "Municipal Water Bureau and Pollution Control Board have dispatched surface skimming unit #04 with automated tracking.",
+        waterbody_id: "wb-bellandur",
+        href: "/dispatch-tracker",
+        created_at: "2026-10-02T19:40:00Z",
+        read: false,
+        synthetic: false,
+        event_id: "DSP-48201",
+      },
+      {
+        id: "notif-2",
+        title: "Chemical Runoff Alert Verified · State Pollution Control Board",
+        description: "High-priority citizen observation confirmed elevated turbidity and foaming at north inlet. Regulatory enforcement notice served.",
+        waterbody_id: "wb-reedwater",
+        href: "/waterbodies/wb-reedwater",
+        created_at: "2026-10-02T18:15:00Z",
+        read: false,
+        synthetic: true,
+        event_id: "EVT-92041",
+      },
+      {
+        id: "notif-3",
+        title: "Micro-Bubble Bio-Aeration Unit Activated",
+        description: "Dissolved oxygen telemetry recovered to 6.4 mg/L following automated bio-aeration activation in central catchment sector.",
+        waterbody_id: "wb-bellandur",
+        href: "/waterbodies/wb-bellandur",
+        created_at: "2026-10-02T16:00:00Z",
+        read: true,
+        synthetic: false,
+        event_id: "EVT-88194",
+      },
+      {
+        id: "notif-4",
+        title: "Floating Debris Interception Milestone · 140kg Recovered",
+        description: "Automated floating booms captured seasonal plastics and non-biodegradable debris before primary catchment weir.",
+        waterbody_id: "wb-millbank",
+        href: "/waterbodies/wb-millbank",
+        created_at: "2026-10-01T11:20:00Z",
+        read: true,
+        synthetic: true,
+        event_id: "EVT-77210",
+      },
+    ];
+    return {
+      items: mockNotifications,
+      unread: mockNotifications.filter((n) => !n.read).length,
+      scheduled: 0,
+    } as T;
   }
 
   if (route === "/organisations") {

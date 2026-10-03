@@ -1095,6 +1095,37 @@ export function LandingPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto" }}>
           <Link
+            to="/notifications"
+            className="icon-button topbar-bell-btn"
+            aria-label="Open updates and notifications"
+            title="Updates & Notifications"
+            style={{
+              position: "relative",
+              minWidth: "38px",
+              minHeight: "38px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "8px",
+              border: "1px solid rgba(116, 196, 118, 0.35)",
+              background: "rgba(255, 255, 255, 0.7)",
+            }}
+          >
+            <Bell size={18} />
+            <span
+              style={{
+                position: "absolute",
+                top: "7px",
+                right: "7px",
+                width: "7px",
+                height: "7px",
+                backgroundColor: "#74C476",
+                borderRadius: "50%",
+                boxShadow: "0 0 6px #74C476",
+              }}
+            />
+          </Link>
+          <Link
             className="button primary"
             to="/report"
             style={{ minHeight: "38px", padding: "8px 16px", fontSize: "12px" }}
@@ -1186,8 +1217,8 @@ export function LandingPage() {
               },
             ].map((s, i) => (
               <article key={s.title} className="glass-panel" style={{ padding: "20px" }}>
-                <span className="step-index" style={{ color: "#e11d48", fontWeight: "700" }}>0{i + 1}</span>
-                <s.icon size={22} style={{ color: "#e11d48", margin: "10px 0" }} />
+                <span className="step-index" style={{ color: "#74C476", fontWeight: "700" }}>0{i + 1}</span>
+                <s.icon size={22} style={{ color: "#74C476", margin: "10px 0" }} />
                 <div>
                   <h3>{s.title}</h3>
                   <p>{s.text}</p>
@@ -1211,14 +1242,14 @@ export function LandingPage() {
             </div>
             <div className="demo-timeline">
               <div>
-                <i style={{ background: "#e11d48" }} />
+                <i style={{ background: "#74C476" }} />
                 <span>
                   Observation recorded
                   <small>Community citizen alert · GPS verified</small>
                 </span>
               </div>
               <div>
-                <i style={{ background: "#f43f5e" }} />
+                <i style={{ background: "#5ba85e" }} />
                 <span>
                   Authority dispatched
                   <small>State Pollution Control Board · Automated routing</small>
@@ -1410,25 +1441,17 @@ export function NotificationsPage() {
     toast = useToast(),
     client = useQueryClient();
   const query = useQuery({
-    queryKey: ["notifications", user?.id],
+    queryKey: ["notifications", user?.id || "public"],
     queryFn: () =>
       api<{ items: any[]; unread: number; scheduled: number }>(
         "/notifications",
       ),
-    enabled: !!user,
-    refetchInterval: 3000,
+    refetchInterval: 5000,
   });
-  if (!user)
-    return (
-      <AuthNeeded
-        title="The story continues here."
-        text="Sign in to receive persistent updates from the places you follow."
-      />
-    );
   async function mark(id: string) {
     try {
       await api(`/notifications/${id}/read`, { method: "POST" });
-      await client.invalidateQueries({ queryKey: ["notifications", user?.id] });
+      await client.invalidateQueries({ queryKey: ["notifications"] });
     } catch (e) {
       toast((e as Error).message);
     }
@@ -1438,13 +1461,52 @@ export function NotificationsPage() {
       <PageHeader
         eyebrow="YOUR PLACES, AS THEY CHANGE"
         title="Updates"
-        description={`${query.data?.unread ?? 0} unread updates · stored in your account`}
+        description={`${query.data?.unread ?? 0} unread updates · live lake activity`}
       >
         <Link className="button secondary" to="/settings">
           <Bell size={16} />
           Preferences
         </Link>
       </PageHeader>
+      {!user && (
+        <div
+          className="section-note highlight-bar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            marginBottom: "20px",
+            padding: "14px 18px",
+            borderRadius: "12px",
+            background: "rgba(255, 255, 255, 0.75)",
+            border: "1px solid rgba(116, 196, 118, 0.35)",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#74C476",
+                boxShadow: "0 0 8px #74C476",
+              }}
+            />
+            <span style={{ fontSize: "13px", fontWeight: "500", color: "#192e1d" }}>
+              Viewing real-time public waterbody updates and automated authority dispatches.
+            </span>
+          </div>
+          <Link
+            to="/login"
+            className="button secondary"
+            style={{ fontSize: "11px", padding: "6px 14px", minHeight: "32px" }}
+          >
+            Sign in to personalize alerts
+          </Link>
+        </div>
+      )}
       <QueryState loading={query.isPending} error={query.error} />
       {!!query.data?.scheduled && (
         <div className="section-note" role="status">

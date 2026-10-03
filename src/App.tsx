@@ -46,6 +46,8 @@ import ThreeDWaterScene from "./components/ThreeDWaterScene";
 import WaterSlideTrail from "./components/WaterSlideTrail";
 import SideMenuDrawer, { openSideMenuDrawer } from "./components/SideMenuDrawer";
 import LusionCursor from "./components/LusionCursor";
+import Error404Page from "./components/Error404Page";
+import BefreakyPreloader from "./components/BefreakyPreloader";
 const mainNav = [
   { to: "/", label: "Home", icon: Home },
   { to: "/dispatch-tracker", label: "Track", icon: Truck },
@@ -70,6 +72,19 @@ export default function App() {
   const [search, setSearch] = useState(""),
     [menu, setMenu] = useState(false),
     [live, setLive] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true,
+  );
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
   const config = useQuery({
     queryKey: ["config"],
     queryFn: () => api<{ demo_mode: boolean }>("/config"),
@@ -157,9 +172,18 @@ export default function App() {
       if (pendingRefresh !== undefined) window.clearTimeout(pendingRefresh);
     };
   }, [client]);
+  if (!isOnline) {
+    return (
+      <>
+        <LusionCursor />
+        <Error404Page isOffline={true} />
+      </>
+    );
+  }
   if (location.pathname === "/")
     return (
       <>
+        <BefreakyPreloader />
         <LusionCursor />
         <ThreeDWaterScene />
         <WaterSlideTrail />
@@ -169,6 +193,7 @@ export default function App() {
     );
   return (
     <div className="app-shell">
+      <BefreakyPreloader />
       <LusionCursor />
       <ThreeDWaterScene />
       <WaterSlideTrail />
@@ -313,14 +338,7 @@ export default function App() {
             <Route path="/organisations/:id" element={<OrganisationsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route
-              path="*"
-              element={
-                <Empty title="This record was not found">
-                  <Link to="/explore">Return to the registry</Link>
-                </Empty>
-              }
-            />
+            <Route path="*" element={<Error404Page />} />
           </Routes>
         </main>
         <nav className="bottom-nav" aria-label="Mobile navigation">
