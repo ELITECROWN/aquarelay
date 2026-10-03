@@ -97,8 +97,16 @@ def test_real_account_following_demo_before_launch_does_not_fail_after_launch(cl
     result=client.post('/api/v1/auth/register',json={'email':'follower@example.org','name':'Real Follower','password':'ARealStrongPassword123!'},headers={'X-CSRF-Token':csrf})
     headers={'X-CSRF-Token':result.json()['csrf_token']}
     assert client.post('/api/v1/following/wb-reedwater',headers=headers).status_code==200
+    from app.db import SessionLocal
+    from app.models import Notification
+    with SessionLocal() as db:
+        db.add(Notification(id='old-demo-notice',user_id=result.json()['user']['id'],event_id='event-closure',waterbody_id='wb-reedwater',title='Demo update',description='Synthetic fixture'))
+        db.commit()
     monkeypatch.setenv('DEMO_MODE','false')
     monkeypatch.setattr(core,'DEMO_MODE',False)
     response=client.get('/api/v1/following')
     assert response.status_code==200
     assert response.json()['waterbodies']==[]
+    notifications=client.get('/api/v1/notifications')
+    assert notifications.status_code==200
+    assert notifications.json()['items']==[]

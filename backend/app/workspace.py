@@ -1,15 +1,17 @@
 """Source-linked registry administration and professional contributions."""
 from datetime import datetime
+import re
+from urllib.parse import urlsplit
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, HttpUrl
-from sqlalchemy import select
+from sqlalchemy import select,or_
 from sqlalchemy.orm import Session
 from .auth import require_user, require_manager
 from .db import get_db
 from .models import User, Membership, WaterBody, Source, Organisation, Biodiversity, Relationship, Evidence, Case, Report, EvidenceRequest, Audit, uid, utcnow
 from .core import get_record, iso, emit_event, passport, organisation_case, evidence_json
-from .core import cases
+from .core import cases,case_json
 
 router = APIRouter()
 
@@ -74,6 +76,67 @@ def create_organisation(body:OrganisationInput,db:Session=Depends(get_db),user=D
     db.add(org);db.add(Audit(id=uid("audit"),actor_id=user.id,kind="organisation_created",target_id=org.id));db.commit()
     return {"id":org.id,"name":org.name}
 
+class SocialApprovalInput(BaseModel):
+    organisation_id:str
+    platform:Literal['x','instagram']
+    handle:str=Field(min_length=1,max_length=30,pattern=r'^[A-Za-z0-9_.]+$')
+    account_url:HttpUrl
+    verification_source:HttpUrl
+    review_confirmed:bool=False
+
+@router.post('/admin/social-accounts',status_code=201)
+def approve_social_account(body:SocialApprovalInput,db:Session=Depends(get_db),user=Depends(require_admin)):
+    org=get_record(db,Organisation,body.organisation_id)
+    account=urlsplit(str(body.account_url));source=urlsplit(str(body.verification_source))
+    hosts={'x':{'x.com','twitter.com'},'instagram':{'instagram.com','www.instagram.com'}}
+    handle_pattern=r'[A-Za-z0-9_]{1,15}' if body.platform=='x' else r'[A-Za-z0-9_.]{1,30}'
+    if not body.review_confirmed or not re.fullmatch(handle_pattern,body.handle):raise HTTPException(422,'Review the account and confirm the cited source before approval.')
+    if account.scheme!='https' or account.hostname not in hosts[body.platform] or account.username or account.password or account.query or account.fragment or account.port not in {None,443} or account.path.rstrip('/').casefold()!='/'+body.handle.casefold():raise HTTPException(422,'Account URL must be the matching HTTPS platform profile without credentials or extra parameters.')
+    if source.scheme!='https' or source.username or source.password or source.hostname in {'localhost','127.0.0.1','::1'} or str(body.verification_source)==str(body.account_url):raise HTTPException(422,'Cite an independent public HTTPS verification source without credentials.')
+    accounts=list(org.data.get('verified_social_accounts',[]))
+    if any(a['account_url'].casefold()==str(body.account_url).casefold() and not a.get('revoked_at') for a in accounts):raise HTTPException(409,'This account already has an active approval.')
+    record={'id':uid('social'),'platform':body.platform,'handle':body.handle,'account_url':str(body.account_url),'verification_source':str(body.verification_source),'verified_at':utcnow(),'reviewer_id':user.id}
+    org.data={**org.data,'verified_social_accounts':[*accounts,record]}
+    db.add(Audit(id=uid('audit'),actor_id=user.id,kind='social_account_approved',target_id=org.id,data={'account_id':record['id'],'verification_source':record['verification_source']}));db.commit()
+    return {'id':record['id']}
+
+class SocialRevocationInput(BaseModel):
+    organisation_id:str
+
+def revoke_social(db,organisation_id,account_id,user):
+    org=get_record(db,Organisation,organisation_id)
+    accounts=[dict(a) for a in org.data.get('verified_social_accounts',[])]
+    record=next((a for a in accounts if a['id']==account_id),None)
+    if not record:raise HTTPException(404,'Approved account not found.')
+    record['revoked_at']=utcnow()
+    org.data={**org.data,'verified_social_accounts':accounts}
+    db.add(Audit(id=uid('audit'),actor_id=user.id,kind='social_account_revoked',target_id=org.id,data={'account_id':account_id}));db.commit()
+    return {'id':account_id,'active':False}
+
+@router.post('/admin/social-accounts/{account_id}/revoke')
+def revoke_social_account(account_id:str,body:SocialRevocationInput,db:Session=Depends(get_db),user=Depends(require_admin)):
+    return revoke_social(db,body.organisation_id,account_id,user)
+
+class SocialRevocationForm(SocialRevocationInput):
+    account_id:str
+
+@router.post('/admin/social-accounts/revoke')
+def revoke_social_account_form(body:SocialRevocationForm,db:Session=Depends(get_db),user=Depends(require_admin)):
+    return revoke_social(db,body.organisation_id,body.account_id,user)
+
+@router.get('/waterbodies/{waterbody_id}/social-accounts')
+def relevant_social_accounts(waterbody_id:str,db:Session=Depends(get_db)):
+    wb=get_record(db,WaterBody,waterbody_id)
+    org_ids=set(db.scalars(select(Case.organisation_id).where(Case.waterbody_id==wb.id,Case.organisation_id.is_not(None))))
+    org_ids.update(db.scalars(select(Relationship.target_id).where(Relationship.waterbody_id==wb.id,Relationship.kind=='documented_responsibility',Relationship.target_type=='organisation')))
+    if wb.data.get('responsible_organisation_id'):org_ids.add(wb.data['responsible_organisation_id'])
+    items=[]
+    for org in db.scalars(select(Organisation).where(Organisation.id.in_(org_ids)).order_by(Organisation.name)):
+        for account in org.data.get('verified_social_accounts',[]):
+            if account.get('revoked_at'):continue
+            items.append({**{k:account[k] for k in ('id','platform','handle','account_url','verification_source','verified_at')},'organisation_id':org.id,'organisation_name':org.name,'synthetic':org.synthetic})
+    return {'items':items,'automatic_tagging':False,'notice':'Accounts reviewed by a platform administrator using the cited source. Select handles yourself; no organisation is automatically tagged or notified.'}
+
 class MembershipInput(BaseModel):
     email:str
     organisation_id:str
@@ -97,16 +160,51 @@ def assign_membership(body:MembershipInput,db:Session=Depends(get_db),admin=Depe
 class AssignmentInput(BaseModel):
     organisation_id:str
     reason:str=Field(min_length=8,max_length=4000)
+    source_name:str=Field(min_length=3,max_length=200)
+    source_url:HttpUrl|None=None
+    license:str=Field(min_length=1,max_length=120)
+    assign_existing:bool=False
 
 @router.put("/admin/waterbodies/{waterbody_id}/responsibility")
 def assign_responsibility(waterbody_id:str,body:AssignmentInput,db:Session=Depends(get_db),user=Depends(require_admin)):
-    wb=get_record(db,WaterBody,waterbody_id);get_record(db,Organisation,body.organisation_id)
+    wb=get_record(db,WaterBody,waterbody_id);org=get_record(db,Organisation,body.organisation_id)
+    if wb.synthetic!=org.synthetic:raise HTTPException(422,'Real and demonstration organisations and water bodies cannot be mixed.')
+    db.refresh(wb,with_for_update={'key_share':True})
+    source=Source(id=uid('source'),waterbody_id=wb.id,organisation_id=org.id,name=body.source_name,kind='responsibility',url=str(body.source_url or ''),license=body.license,attribution=body.source_name,synthetic=wb.synthetic)
+    db.add(source);db.flush()
+    db.add(Relationship(id=uid('relation'),waterbody_id=wb.id,target_type='organisation',target_id=org.id,kind='documented_responsibility',description=body.reason,source_id=source.id,synthetic=wb.synthetic))
     wb.data={**wb.data,"responsible_organisation_id":body.organisation_id}
-    for case in db.scalars(select(Case).where(Case.waterbody_id==wb.id,Case.organisation_id==None)):
-        case.organisation_id=body.organisation_id
-        emit_event(db,wb.id,case.id,"case_update","Responsible organisation assigned",body.reason,user.id)
-    db.add(Audit(id=uid("audit"),actor_id=user.id,kind="responsibility_assigned",target_id=wb.id,data=body.model_dump()));db.commit()
-    return {"waterbody_id":wb.id,"organisation_id":body.organisation_id}
+    assigned=0
+    if body.assign_existing:
+        for case in db.scalars(select(Case).where(Case.waterbody_id==wb.id,Case.organisation_id.is_(None),Case.state!='closed').with_for_update()):
+            if case.data.get('merged_into'):continue
+            case.organisation_id=body.organisation_id;assigned+=1
+            emit_event(db,wb.id,case.id,"case_update","Assigned for organisation review",body.reason+' Assignment does not establish recipient acknowledgement.',user.id,source.id)
+    emit_event(db,wb.id,None,'registry','Case coordination responsibility recorded',body.reason,user.id,source.id)
+    db.add(Audit(id=uid("audit"),actor_id=user.id,kind="responsibility_assigned",target_id=wb.id,data=body.model_dump(mode='json')));db.commit()
+    return {"id":wb.id,"waterbody_id":wb.id,"organisation_id":body.organisation_id,'assigned_cases':assigned,'source_id':source.id}
+
+@router.get('/admin/unassigned-cases')
+def unassigned_cases(page:int=Query(1,ge=1),db:Session=Depends(get_db),user=Depends(require_admin)):
+    stmt=select(Case).where(Case.organisation_id.is_(None),Case.state!='closed',or_(Case.data['merged_into'].as_string().is_(None),Case.data['merged_into'].as_string()=='')).order_by(Case.created_at)
+    return {'items':[case_json(db,c) for c in db.scalars(stmt.offset((page-1)*50).limit(50))]}
+
+class CaseAssignmentInput(BaseModel):
+    case_id:str
+    organisation_id:str
+    reason:str=Field(min_length=8,max_length=4000)
+
+@router.post('/admin/case-assignments')
+def assign_case(body:CaseAssignmentInput,db:Session=Depends(get_db),user=Depends(require_admin)):
+    case=get_record(db,Case,body.case_id);org=get_record(db,Organisation,body.organisation_id)
+    wb=get_record(db,WaterBody,case.waterbody_id)
+    db.refresh(wb,with_for_update={'key_share':True});db.refresh(case,with_for_update=True)
+    if case.state=='closed' or case.data.get('merged_into'):raise HTTPException(409,'Reopen closed cases through the case workflow; merged cases cannot be reassigned.')
+    if case.synthetic!=org.synthetic:raise HTTPException(422,'Real cases cannot be assigned to demonstration organisations, or vice versa.')
+    previous=case.organisation_id;case.organisation_id=org.id
+    emit_event(db,case.waterbody_id,case.id,'case_update','Assigned for organisation review',body.reason+' Assignment does not establish recipient acknowledgement.',user.id)
+    db.add(Audit(id=uid('audit'),actor_id=user.id,kind='case_assigned',target_id=case.id,data={'previous_organisation_id':previous,'organisation_id':org.id,'reason':body.reason}));db.commit()
+    return {'id':case.id,'organisation_id':org.id,'state':case.state}
 
 def contributor(db,user):
     membership=db.scalar(select(Membership).where(Membership.user_id==user.id,Membership.organisation_id==user.organisation_id))

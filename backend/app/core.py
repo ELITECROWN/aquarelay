@@ -349,6 +349,7 @@ def submit_report(body:ReportInput,response:Response,db:Session=Depends(get_db),
         response.status_code=200
         return {"report":{"id":existing.id,"client_id":existing.client_id,"created_at":existing.created_at,"synthetic":existing.synthetic},"case_id":existing.case_id,"replayed":True}
     wb=get_record(db,WaterBody,body.waterbody_id)
+    db.refresh(wb,with_for_update={'key_share':True})
     if body.synthetic and not DEMO_MODE:
         raise HTTPException(422,"Synthetic submissions are disabled outside demo mode.")
     if wb.synthetic and not body.synthetic:

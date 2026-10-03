@@ -1,7 +1,7 @@
 """Durable SQL storage; SQLite is explicitly a local development fallback."""
 import os
 from pathlib import Path
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, select
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, with_loader_criteria
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/aquarelay.sqlite")
@@ -33,6 +33,8 @@ def exclude_demonstration_records(execution):
             model=mapper.class_
             if hasattr(model,'synthetic'):
                 execution.statement=execution.statement.options(with_loader_criteria(model,model.synthetic.is_(False),include_aliases=True))
+        from .models import Notification,Event
+        execution.statement=execution.statement.options(with_loader_criteria(Notification,Notification.event_id.in_(select(Event.id).where(Event.synthetic.is_(False))),include_aliases=True))
 
 def get_db():
     with SessionLocal() as db:
