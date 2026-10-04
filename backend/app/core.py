@@ -152,11 +152,14 @@ def distance(a, b, c, d):
     h = math.sin(dx/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dy/2)**2
     return 6371000 * 2 * math.atan2(math.sqrt(h), math.sqrt(max(0,1-h)))
 
-def waterbody_json(db, row, as_of=None):
-    cases = list(db.scalars(select(Case).where(Case.waterbody_id == row.id)))
-    observations = list(db.scalars(select(Observation).where(Observation.waterbody_id == row.id)))
-    source_ids={o.source_id for o in observations} | set(db.scalars(select(Event.source_id).where(Event.waterbody_id==row.id,Event.source_id!=None)))
-    sources = list(db.scalars(select(Source).where(or_(Source.waterbody_id == row.id,Source.id.in_(source_ids)))))
+def waterbody_json(db, row, as_of=None, prefetched=None):
+    if prefetched is not None:
+        cases,observations,sources=prefetched
+    else:
+        cases = list(db.scalars(select(Case).where(Case.waterbody_id == row.id)))
+        observations = list(db.scalars(select(Observation).where(Observation.waterbody_id == row.id)))
+        source_ids={o.source_id for o in observations} | set(db.scalars(select(Event.source_id).where(Event.waterbody_id==row.id,Event.source_id!=None)))
+        sources = list(db.scalars(select(Source).where(or_(Source.waterbody_id == row.id,Source.id.in_(source_ids)))))
     if as_of:
         cases = [c for c in cases if c.created_at <= as_of]
         sources = [s for s in sources if s.created_at <= as_of]
@@ -176,6 +179,19 @@ def waterbody_json(db, row, as_of=None):
     result.update(case_count=len(open_cases), total_case_count=len(cases), source_count=len(sources), latest_observed_at=max([o.observed_at for o in observations], default=None), case_state=states[0] if states else "No open cases — condition not assessed", data_state=data_state)
     return result
 
+def waterbody_page_json(db, rows):
+    """Fetch related records once for the page, rather than once per lake."""
+    if not rows:return []
+    ids=[row.id for row in rows]
+    cases={key:[] for key in ids};observations={key:[] for key in ids};links={key:set() for key in ids}
+    for record in db.scalars(select(Case).where(Case.waterbody_id.in_(ids))):cases[record.waterbody_id].append(record)
+    for record in db.scalars(select(Observation).where(Observation.waterbody_id.in_(ids))):
+        observations[record.waterbody_id].append(record);links[record.waterbody_id].add(record.source_id)
+    for water_id,source_id in db.execute(select(Event.waterbody_id,Event.source_id).where(Event.waterbody_id.in_(ids),Event.source_id.is_not(None))):links[water_id].add(source_id)
+    linked_ids=set().union(*links.values())
+    sources=list(db.scalars(select(Source).where(or_(Source.waterbody_id.in_(ids),Source.id.in_(linked_ids)))))
+    return [waterbody_json(db,row,prefetched=(cases[row.id],observations[row.id],[source for source in sources if source.waterbody_id==row.id or source.id in links[row.id]])) for row in rows]
+
 @router.get("/config")
 def config():
     from .mail import configured
@@ -193,30 +209,40 @@ def waterbodies(q: str = "", type: str = "", state: str = "", availability: str 
     if q:
         needle=q.lower()
         statement=statement.where(or_(func.lower(WaterBody.name).contains(needle,autoescape=True),func.lower(WaterBody.locality).contains(needle,autoescape=True),func.lower(cast(WaterBody.aliases,String)).contains(needle,autoescape=True)))
+    workflow_filter=state in {'new','acknowledged','investigating','action_in_progress','closed'}
+    if workflow_filter:
+        statement=statement.where(WaterBody.id.in_(select(Case.waterbody_id).where(Case.state==state)))
+    if start_iso or end_iso:
+        event_dates=select(Event.waterbody_id)
+        observation_dates=select(Observation.waterbody_id)
+        if start_iso:
+            event_dates=event_dates.where(Event.created_at>=start_iso)
+            observation_dates=observation_dates.where(Observation.observed_at>=start_iso)
+        if end_iso:
+            event_dates=event_dates.where(Event.created_at<=end_iso)
+            observation_dates=observation_dates.where(Observation.observed_at<=end_iso)
+        statement=statement.where(or_(WaterBody.id.in_(event_dates),WaterBody.id.in_(observation_dates)))
     if not any((state,availability,start_iso,end_iso)) and lat is None and lon is None and radius is None:
         total=db.scalar(select(func.count()).select_from(statement.subquery()))
-        rows=db.scalars(statement.offset((page-1)*page_size).limit(page_size))
+        rows=list(db.scalars(statement.offset((page-1)*page_size).limit(page_size)))
         keys=('id','name','locality','type','latitude','longitude','synthetic')
-        return {"items":[{key:getattr(wb,key) for key in keys} if identity_only else waterbody_json(db,wb) for wb in rows],"total":total,"page":page,"page_size":page_size}
+        return {"items":[{key:getattr(wb,key) for key in keys} for wb in rows] if identity_only else waterbody_page_json(db,rows),"total":total,"page":page,"page_size":page_size}
     if radius is not None and (lat is None or lon is None): raise HTTPException(422,"Radius search requires latitude and longitude.")
     if db.bind.dialect.name=="postgresql" and lat is not None and lon is not None and radius is not None:
         statement=statement.where(text("ST_DWithin(geog,ST_SetSRID(ST_MakePoint(:search_lon,:search_lat),4326)::geography,:search_radius)")).params(search_lon=lon,search_lat=lat,search_radius=radius)
-    for wb in db.scalars(statement):
+    matching_rows=list(db.scalars(statement))
+    summaries=waterbody_page_json(db,matching_rows)
+    for wb,item in zip(matching_rows,summaries):
         if q and q.lower() not in " ".join([wb.name, wb.locality, *wb.aliases]).lower():
             continue
         if type and wb.type != type:
             continue
-        item=waterbody_json(db,wb)
-        if state and state not in {"all",item["case_state"]} and not db.scalar(select(Case.id).where(Case.waterbody_id==wb.id,Case.state==state)):
+        if state and not workflow_filter and state not in {"all",item["case_state"]} and not db.scalar(select(Case.id).where(Case.waterbody_id==wb.id,Case.state==state)):
             continue
         if availability in {"available","observations"} and not item["latest_observed_at"]:
             continue
         if availability in {"outdated","stale"} and item["data_state"] != "Data unavailable or outdated":
             continue
-        if start_iso or end_iso:
-            dates=[e.created_at for e in db.scalars(select(Event).where(Event.waterbody_id==wb.id))]+list(db.scalars(select(Observation.observed_at).where(Observation.waterbody_id==wb.id)))
-            if not any((not start_iso or t>=start_iso) and (not end_iso or t<=end_iso) for t in dates):
-                continue
         if lat is not None and lon is not None:
             if not -90<=lat<=90 or not -180<=lon<=180:
                 raise HTTPException(422,"Coordinates out of range.")

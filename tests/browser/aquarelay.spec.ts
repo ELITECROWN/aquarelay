@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 // These journeys share one local server/IP, including multiple simultaneous
 // sessions. Pace independent journeys within the real 240-request/minute limit.
 let previousJourneyStarted = 0;
-const interceptTiles=(context:BrowserContext)=>context.route('https://tile.openstreetmap.org/**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')}));
+const interceptTiles=(context:BrowserContext)=>context.route('https://tile.openstreetmap.org/**',route=>route.fulfill({contentType:'image/png',headers:{'Access-Control-Allow-Origin':'*'},body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')}));
 test.beforeEach(async ({page}, info) => {
   // Automated QA must not request community-funded OSM tiles.
   await interceptTiles(page.context());
@@ -294,8 +294,7 @@ test("golden journey: approved import, report/evidence, live flag, scoped respon
     }),
   ).toBeVisible();
   const caseId = (await contributor
-    .locator(".wf-record-details dd")
-    .nth(1)
+    .locator('.wf-record-details dt').filter({hasText:/^Case ID$/}).locator('xpath=following-sibling::dd[1]')
     .textContent())!.trim();
   await expect(
     observer.locator(".water-results").getByRole("button", {

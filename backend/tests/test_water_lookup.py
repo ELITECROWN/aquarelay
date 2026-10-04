@@ -1,6 +1,28 @@
 from fastapi.testclient import TestClient
 from app.main import app
 from app import core
+from app.db import engine, SessionLocal
+from sqlalchemy import event, select
+
+def test_batched_summaries_preserve_record_values():
+    with TestClient(app), SessionLocal() as db:
+        rows=list(db.scalars(select(core.WaterBody).order_by(core.WaterBody.name)))
+        expected=[core.waterbody_json(db,row) for row in rows]
+        assert core.waterbody_page_json(db,rows)==expected
+
+def test_registry_page_uses_bounded_selects():
+    with TestClient(app) as client:
+        selects=[]
+        def capture(conn,cursor,statement,parameters,context,executemany):
+            if statement.lstrip().upper().startswith('SELECT'):selects.append(statement)
+        event.listen(engine,'before_cursor_execute',capture)
+        try:
+            response=client.get('/api/v1/waterbodies?page_size=100')
+        finally:
+            event.remove(engine,'before_cursor_execute',capture)
+        assert response.status_code==200
+        assert len(response.json()['items'])>=7
+        assert len(selects)<=12, len(selects)
 
 def test_identity_lookup_skips_expensive_summaries(monkeypatch):
     def forbidden(*args, **kwargs):
