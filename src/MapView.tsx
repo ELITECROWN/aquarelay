@@ -7,20 +7,14 @@ import {
   LngLatBounds,
   setWorkerUrl,
   type GeoJSONSource,
-  type StyleSpecification,
 } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { LocateFixed, Maximize2, Layers, Info } from "lucide-react";
 import type { MapWaterBody as WaterBody } from "./types";
 setWorkerUrl(workerUrl);
-const realMap: StyleSpecification = {
-  version: 8,
-  sources: { streets:{type:'raster',tiles:[import.meta.env.VITE_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'} },
-  layers: [
-    {id:'streets-basemap',type:'raster',source:'streets'},
-  ],
-};
+import {realMap} from "./mapStyle";
+
 export default function MapView({
   items,
   selected,

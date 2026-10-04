@@ -32,6 +32,7 @@ export interface ShareModalProps {
   waterbody: Water;
   caseRecord?: Case;
   sourceAttribution?: string;
+  reportRecord?: {id:string;description:string;observed_at:string;review_state:string};
   recordKind?: "case" | "action";
 }
 export default function ShareModal({
@@ -40,6 +41,7 @@ export default function ShareModal({
   waterbody,
   caseRecord,
   sourceAttribution,
+  reportRecord,
   recordKind = "case",
 }: ShareModalProps) {
   const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(
@@ -86,15 +88,16 @@ export default function ShareModal({
         )
       : undefined);
   const reviewLabel =
-    recordKind === "action"
+    reportRecord ? aggregateReviewLabel([reportRecord.review_state]) : recordKind === "action"
       ? "Organisation-submitted action record"
       : caseRecord
         ? aggregateReviewLabel(reviewStates)
         : "Public water-body record";
-  const update = caseRecord
+  const update = reportRecord ? reportRecord.description : caseRecord
     ? caseRecord.outcome || caseRecord.title
     : "Explore its recorded history, observations and documented actions.";
   const timestamp =
+    reportRecord?.observed_at ||
     caseRecord?.completed_at ||
     caseRecord?.observed_at ||
     waterbody.latest_observed_at ||
@@ -136,7 +139,7 @@ export default function ShareModal({
     setBlob(undefined);
     const drawing = canvasElement;
     try {
-      drawShareCard(drawing,format,{name:waterbody.name,update,reviewLabel,status:caseRecord?(caseRecord.state==='closed'?'Resolved':label(caseRecord.state)):'Public water-body record',attribution,recordDate:timestamp?date(timestamp):'',snapshotDate:date(snapshotAt),url:publicUrl?new URL(permalink).host:'Local preview',synthetic});
+      drawShareCard(drawing,format,{name:waterbody.name,update,reviewLabel,kind:reportRecord?"report":undefined,status:reportRecord?(reportRecord.review_state==='submitted'?'Awaiting review':label(reportRecord.review_state)):caseRecord?(caseRecord.state==='closed'?'Resolved':label(caseRecord.state)):'Public water-body record',attribution,recordDate:timestamp?date(timestamp):'',snapshotDate:date(snapshotAt),url:publicUrl?new URL(permalink).host:'Local preview',synthetic});
     } catch(err){setError(errorText(err));return;}
     try {
       // Fixed-size, locally drawn cards avoid waiting for the browser's idle
@@ -158,6 +161,8 @@ export default function ShareModal({
     waterbody.name,
     caseRecord?.id,
     caseRecord?.state,
+    reportRecord?.id,
+    reportRecord?.review_state,
     reviewLabel,
     update,
     timestamp,

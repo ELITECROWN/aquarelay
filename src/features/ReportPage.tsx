@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import ShareModal from "./ShareModal";
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,6 +11,7 @@ import {
   LocateFixed,
   MapPin,
   Save,
+  Share2,
   Trash2,
 } from "lucide-react";
 import { useSession } from "../session";
@@ -33,6 +35,14 @@ import {
   useRecord,
   WorkflowHeader,
 } from "./workflowShared";
+
+const ObservationMap=lazy(()=>import("./ObservationMap"));
+
+class ObservationMapBoundary extends Component<{children:ReactNode},{failed:boolean}> {
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  render(){return this.state.failed?<Notice>Map could not be loaded. Select a water body and enter the observation coordinates below; the report form remains available.</Notice>:this.props.children;}
+}
 
 type Water = {
   id: string;
@@ -86,8 +96,10 @@ const initial: ReportValues = {
 export default function ReportPage() {
   const { user, loading: sessionLoading } = useSession();
   const [params] = useSearchParams();
+  const [waterSearch,setWaterSearch]=useState("");
+  const [sharing,setSharing]=useState(false);
   const waters = useRecord<{ items: Water[] }>(
-    "/api/v1/waterbodies?page_size=100",
+    `/api/v1/waterbodies?page_size=100&q=${encodeURIComponent(waterSearch)}`,
   );
   const cases = useRecord<{ items: Case[] }>("/api/v1/cases?page_size=100");
   const [step, setStep] = useState(0),
@@ -101,6 +113,11 @@ export default function ReportPage() {
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [submitted, setSubmitted] = useState<LocalDraft>();
+  const requestedWaterId=params.get("waterbody") || params.get("waterbody_id") || "";
+  const selectedWaterId=submitted?.values.waterbody_id || values.waterbody_id || requestedWaterId;
+  const selectedWater=useRecord<{waterbody:Water}>(`/api/v1/waterbodies/${encodeURIComponent(selectedWaterId)}`,!!selectedWaterId);
+  const submittedRecord=useRecord<{case:Case & {review_state:string;synthetic:boolean};reports:{id:string;description:string;observed_at:string;review_state:string}[]}>(`/api/v1/cases/${submitted?.caseId}`,!!submitted?.caseId);
+  const submittedReport=submittedRecord.data?.reports.find(report=>report.id===submitted?.reportId);
   const [online, setOnline] = useState(navigator.onLine);
   const observedDate = observedLocal ? new Date(observedLocal) : undefined;
   const observedISO =
@@ -139,11 +156,13 @@ export default function ReportPage() {
     setDrafts([]);
     setCurrent(undefined);
     setSubmitted(undefined);
-    setValues(initial);
+    setValues({...initial,observation_type:types.some(([key])=>key===params.get("type")) ? params.get("type")! : ""});
+    setSharing(false);
     setMedia([]);
     if (user) void reloadDrafts();
   }, [user?.id]);
-  const waterList = (Array.isArray(waters.data) ? waters.data : waters.data?.items) || [];
+  const results = (Array.isArray(waters.data) ? waters.data : waters.data?.items) || [];
+  const waterList=selectedWater.data?.waterbody&&!results.some(w=>w.id===selectedWater.data!.waterbody.id)?[selectedWater.data.waterbody,...results]:results;
   const caseList = (Array.isArray(cases.data) ? cases.data : cases.data?.items) || [];
   const candidateList = candidates.data?.items || [];
 
@@ -159,7 +178,7 @@ export default function ReportPage() {
         synthetic: water.synthetic,
         related_case_id: params.get("related_case") || undefined,
       }));
-  }, [waters.data, params, user?.id]);
+  }, [waters.data, selectedWater.data, params, user?.id]);
   useEffect(() => {
     const onOnline = () => {
       setOnline(true);
@@ -352,9 +371,14 @@ export default function ReportPage() {
           <Link className="wf-button" to={`/incidents/${submitted.caseId}`}>
             View incident <ArrowRight size={17} />
           </Link>
+          <button className="wf-button secondary" disabled={!submittedReport||!selectedWater.data} onClick={()=>setSharing(true)}><Share2 size={17}/> Share my report</button>
+          {submittedRecord.error&&<Notice error>{submittedRecord.error}<button onClick={submittedRecord.reload}>Retry loading report</button></Notice>}
+          {selectedWater.error&&<Notice error>{selectedWater.error}<button onClick={selectedWater.reload}>Retry loading water body</button></Notice>}
+          {submittedReport&&selectedWater.data&&submittedRecord.data&&<ShareModal open={sharing} onClose={()=>setSharing(false)} waterbody={selectedWater.data.waterbody} caseRecord={submittedRecord.data.case} reportRecord={submittedReport} sourceAttribution="Community-submitted observation"/>}
           <button
             className="wf-button secondary"
             onClick={() => {
+              setSharing(false);
               setSubmitted(undefined);
               setCurrent(undefined);
               setValues(initial);
@@ -410,6 +434,7 @@ export default function ReportPage() {
                     below.
                   </Notice>
                 )}
+                <label className="wf-field">Search water bodies by name or place<input type="search" maxLength={120} value={waterSearch} onChange={e=>setWaterSearch(e.target.value)} placeholder="Search Bengaluru, Sodepur, Potheri or a water-body name"/></label>
                 <label className="wf-field">
                   Water body
                   <select
@@ -442,6 +467,8 @@ export default function ReportPage() {
                     )}
                   </select>
                 </label>
+                {water&&<ObservationMapBoundary><Suspense fallback={<Loading/>}><ObservationMap position={{latitude:values.latitude,longitude:values.longitude}} onChange={position=>setValues(previous=>({...previous,...position}))}/></Suspense></ObservationMapBoundary>}
+                {selectedWater.error&&<Notice error>{selectedWater.error}</Notice>}
                 <div className="wf-form-grid">
                   <label className="wf-field">
                     Observed at
@@ -464,7 +491,7 @@ export default function ReportPage() {
                       onClick={locate}
                     >
                       <LocateFixed size={16} />
-                      Use my location
+                      Use my location (optional)
                     </button>
                   </div>
                   <label className="wf-field">

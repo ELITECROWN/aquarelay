@@ -32,3 +32,13 @@
 .preloader-brand-title { color: #fef3c7 !important; }
 .preloader-brand-sub { color: #d7e4da !important; }
 .pureflow-login-link { color: #ffffff !important; border: 1px solid #d6d3d1 !important; }
+.observation-map { margin: 16px 0; }
+.observation-map-frame { position: relative; border: 1px solid #89939f; border-radius: 12px; overflow: hidden; }
+.observation-map-canvas { height: 340px; width: 100%; }
+.observation-location-pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); pointer-events: none; filter: drop-shadow(0 2px 2px #ffffff); z-index: 2; }
+.observation-map .maplibregl-canvas:focus-visible { outline: 3px solid #995500; outline-offset: -3px; }
+@media (max-width: 600px) { .observation-map-canvas { height: 300px; } }
+/* Decorative guidance must never block selecting water-body markers. */
+.map-intro { pointer-events: none; }
+.mini-actions a { display: flex; align-items: center; gap: 7px; padding: 5px; font-size: 10px; border: 1px solid #a6adb7; border-radius: 7px; }
+.mini-actions { flex-wrap: wrap; gap: 10px; }

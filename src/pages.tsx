@@ -573,6 +573,7 @@ export function ExplorePage() {
                   <ArrowRight size={16} />
                 </Link>
                 <div className="mini-actions">
+                  <Link to={`/report?waterbody=${selected}`}><MapPin size={16}/> Report here</Link>
                   <button onClick={follow}>
                     <Bookmark size={16} />
                     Follow

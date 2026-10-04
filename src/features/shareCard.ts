@@ -13,7 +13,7 @@ export function textLines(text:string,measure:(s:string)=>number,width:number,ma
  if(lines.length>maximumLines){lines.length=maximumLines;let last=lines[maximumLines-1];while(last&&measure(last+'…')>width)last=last.slice(0,-1);lines[maximumLines-1]=last+'…';}
  return lines;
 }
-type CardData={name:string;update:string;reviewLabel:string;status:string;attribution:string;recordDate:string;snapshotDate:string;url:string;synthetic:boolean};
+type CardData={kind?:"report";name:string;update:string;reviewLabel:string;status:string;attribution:string;recordDate:string;snapshotDate:string;url:string;synthetic:boolean};
 export function drawShareCard(canvas:HTMLCanvasElement,format:CardFormat,data:CardData){
  const size=cardSize(format);canvas.width=size.width;canvas.height=size.height;
  const c=canvas.getContext('2d');if(!c)throw new Error('This browser cannot draw a share image.');
@@ -25,7 +25,7 @@ export function drawShareCard(canvas:HTMLCanvasElement,format:CardFormat,data:Ca
  const top=story?170:44;round(48,top,984,story?1530:992,36,'#f8f6ef');
  const brandY=top+65;c.fillStyle='#f59e0b';c.beginPath();c.arc(126,brandY,30,0,Math.PI*2);c.fill();c.strokeStyle='#1c1917';c.lineWidth=3;for(let j=-1;j<=1;j++){c.beginPath();for(let x=0;x<=36;x++){const y=brandY+j*9+Math.sin(x/5)*3;if(x===0)c.moveTo(108+x,y);else c.lineTo(108+x,y);}c.stroke();}
  c.fillStyle='#1c1917';c.font='bold 32px Arial, sans-serif';c.fillText('AquaRelay',172,brandY+11);c.fillStyle='#667565';c.font='20px Arial, sans-serif';c.fillText('EVERY WATER BODY HAS A HISTORY',left,top+126);
- text(data.synthetic?'SYNTHETIC DEMO · FICTIONAL RECORD':data.status==='Resolved'?'RECOVERY RECORDED':'A WATER-BODY UPDATE',top+184,23,1,'#8b5b13','bold');
+ text(data.synthetic?'SYNTHETIC DEMO · FICTIONAL RECORD':data.kind==='report'?'COMMUNITY OBSERVATION':data.status==='Resolved'?'RECOVERY RECORDED':'A WATER-BODY UPDATE',top+184,23,1,'#8b5b13','bold');
  text(data.name,top+storyOffset(story,272,240),story?70:52,story?3:2,'#183b30','bold');
  const surface=story?top+535:top+380,artHeight=story?310:175;
  round(left,surface,width,artHeight,24,'#d9e6d4');

@@ -112,3 +112,32 @@ subtle hover/press/reveal motion, and reduced-motion overrides. QA screenshots
 use synthetic fixtures. Validation: 117 backend tests passed, 2 PostgreSQL tests
 skipped; 23 frontend tests and production build passed. Browser validation covers
 identity information, border/text styles, mobile overflow and reduced motion.
+
+## Water-body reporting, map pin and submitted-report sharing — 4 October 2026
+
+The Explore selection panel now includes Report here. Water-body passport Report
+links remain. ReportPage loads the exact selected record separately from its
+searchable first-page list, fixing deep links for registry records outside the
+initial 100 results. The login return URL preserves the selected water body.
+
+The reporting map uses the configured real basemap, a fixed centre pin, drag/tap
+and keyboard-arrow positioning. Coordinates update the report/draft payload;
+they do not change the registry feature's identity or centre. Device geolocation
+is optional and manual coordinates remain available. A failed map chunk is
+contained so the report form stays usable. Decorative Explore guidance no longer
+intercepts marker clicks.
+
+A successfully synced submission can open Share my report directly from its
+success screen. The card uses that individual report's stored description,
+observation date and review state, even when it joins an existing case. It links
+to the incident and retains synthetic labels where relevant. Existing Instagram
+Story / WhatsApp Status 1080x1920 PNG exports and square format are reused;
+posting is manual. Local pending drafts do not claim successful submission or
+expose this success sharing flow.
+
+Validation: 23 frontend unit tests and production build passed. Isolated browser
+journey verified marker-to-report navigation, exact-record prefill despite an
+empty first-page list, changed map coordinates in the actual POST, successful
+submission and both portrait downloads. A separate map-chunk failure scenario
+verified manual entry and wizard continuation. Windows runner teardown requires
+interruption after scenario results; screenshots use synthetic QA fixtures.
