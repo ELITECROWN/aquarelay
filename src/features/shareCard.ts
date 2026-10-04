@@ -13,7 +13,7 @@ export function textLines(text:string,measure:(s:string)=>number,width:number,ma
  if(lines.length>maximumLines){lines.length=maximumLines;let last=lines[maximumLines-1];while(last&&measure(last+'…')>width)last=last.slice(0,-1);lines[maximumLines-1]=last+'…';}
  return lines;
 }
-type CardData={kind?:"report";name:string;update:string;reviewLabel:string;status:string;attribution:string;recordDate:string;snapshotDate:string;url:string;synthetic:boolean};
+type CardData={kind?:"report";name:string;update:string;reviewLabel:string;status:string;attribution:string;recordDate:string;snapshotDate:string;url:string;synthetic:boolean;mapImage?:HTMLCanvasElement;locality?:string};
 export function drawShareCard(canvas:HTMLCanvasElement,format:CardFormat,data:CardData){
  const size=cardSize(format);canvas.width=size.width;canvas.height=size.height;
  const c=canvas.getContext('2d');if(!c)throw new Error('This browser cannot draw a share image.');
@@ -29,9 +29,13 @@ export function drawShareCard(canvas:HTMLCanvasElement,format:CardFormat,data:Ca
  text(data.name,top+storyOffset(story,272,240),story?70:52,story?3:2,'#183b30','bold');
  const surface=story?top+535:top+380,artHeight=story?310:175;
  round(left,surface,width,artHeight,24,'#d9e6d4');
- c.fillStyle='#f4c46b';c.beginPath();c.arc(830,surface+62,40,0,Math.PI*2);c.fill();
  c.save();c.beginPath();c.roundRect(left,surface,width,artHeight,24);c.clip();
- for(let i=0;i<4;i++){c.fillStyle=['#abcabd','#82b2aa','#4d9184','#256f62'][i];c.beginPath();c.moveTo(left,surface+80+i*40);c.bezierCurveTo(350,surface+170+i*25,590,surface+10+i*40,984,surface+100+i*44);c.lineTo(984,surface+artHeight);c.lineTo(left,surface+artHeight);c.closePath();c.fill();}c.restore();
+ if(data.mapImage){const sourceHeight=data.mapImage.width*artHeight/width;c.drawImage(data.mapImage,0,(data.mapImage.height-sourceHeight)/2,data.mapImage.width,sourceHeight,left,surface,width,artHeight);}
+ else {c.fillStyle='#eef0e8';c.fillRect(left,surface,width,artHeight);c.fillStyle='#374151';c.font='22px Arial';c.fillText('Location map unavailable',left+24,surface+40);}
+ const pinX=left+width/2,pinY=surface+artHeight/2;
+ c.shadowColor='#00000055';c.shadowBlur=12;c.fillStyle='#dc2626';c.beginPath();c.moveTo(pinX,pinY);c.bezierCurveTo(pinX-14,pinY-18,pinX-32,pinY-35,pinX-32,pinY-55);c.arc(pinX,pinY-55,32,Math.PI,0);c.bezierCurveTo(pinX+32,pinY-35,pinX+14,pinY-18,pinX,pinY);c.fill();c.shadowBlur=0;c.fillStyle='white';c.beginPath();c.arc(pinX,pinY-55,12,0,Math.PI*2);c.fill();
+ c.fillStyle='#ffffffee';c.fillRect(left,surface+artHeight-31,width,31);c.fillStyle='#374151';c.font='17px Arial';c.fillText('© OpenStreetMap contributors',left+12,surface+artHeight-10);c.restore();
+ if(data.locality)text(data.locality,surface+artHeight+40,22,1,'#4b5563');
  text(data.update,story?top+920:top+615,story?39:30,story?4:2,'#183b30');
  const reviewY=story?top+1180:top+740;
  text(data.reviewLabel,reviewY,story?26:22,2,'#79571f','bold');

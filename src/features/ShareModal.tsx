@@ -5,10 +5,14 @@ import { date, errorText, label, Notice, useRecord } from "./workflowShared";
 import { aggregateReviewLabel } from "./shareLabels";
 import {selectedSocialHandles,type SocialAccount} from './socialAccounts';
 import {drawShareCard,type CardFormat} from './shareCard';
+import {loadShareMap} from './shareMap';
 
 type Water = {
   id: string;
   name: string;
+  latitude?: number;
+  longitude?: number;
+  locality?: string;
   synthetic?: boolean;
   summary?: string;
   latest_observed_at?: string;
@@ -59,7 +63,7 @@ export default function ShareModal({
   const approvedAccounts=accounts.loading||accounts.error?[]:accounts.data?.items||[];
   const chosenHandles=selectedSocialHandles(approvedAccounts,selectedAccounts);
   const sources = useRecord<{
-    waterbody: { id: string };
+    waterbody: Water;
     sources: { id: string; name: string; attribution?: string }[];
   }>(`/api/v1/waterbodies/${waterbody.id}`, open);
   const attribution =
@@ -73,6 +77,17 @@ export default function ShareModal({
           .join("; ")
       : `AquaRelay public record ${caseRecord?.id || waterbody.id}`);
   const synthetic = !!waterbody.synthetic || !!caseRecord?.synthetic;
+  const mapWater=sources.data?.waterbody.id===waterbody.id?sources.data.waterbody:waterbody;
+  const [mapImage,setMapImage]=useState<HTMLCanvasElement>();
+  const [mapError,setMapError]=useState('');
+  const [mapRetry,setMapRetry]=useState(0);
+  useEffect(()=>{
+    if(!open)return;
+    let active=true;setMapImage(undefined);setMapError('');
+    if(mapWater.latitude===undefined||mapWater.longitude===undefined){if(sources.error||sources.data)setMapError('Lake coordinates could not be loaded. Reopen the share card after refreshing the record.');return;}
+    void loadShareMap(mapWater.latitude,mapWater.longitude).then(image=>{if(active)setMapImage(image);}).catch(err=>{if(active)setMapError(errorText(err));});
+    return()=>{active=false;};
+  },[open,waterbody.id,mapWater.latitude,mapWater.longitude,mapRetry,sources.error,sources.data]);
   const reviews = useRecord<{
     case: { id: string };
     reports: { review_state?: string }[];
@@ -139,7 +154,7 @@ export default function ShareModal({
     setBlob(undefined);
     const drawing = canvasElement;
     try {
-      drawShareCard(drawing,format,{name:waterbody.name,update,reviewLabel,kind:reportRecord?"report":undefined,status:reportRecord?(reportRecord.review_state==='submitted'?'Awaiting review':label(reportRecord.review_state)):caseRecord?(caseRecord.state==='closed'?'Resolved':label(caseRecord.state)):'Public water-body record',attribution,recordDate:timestamp?date(timestamp):'',snapshotDate:date(snapshotAt),url:publicUrl?new URL(permalink).host:'Local preview',synthetic});
+      drawShareCard(drawing,format,{name:waterbody.name,mapImage,locality:mapWater.locality,update,reviewLabel,kind:reportRecord?"report":undefined,status:reportRecord?(reportRecord.review_state==='submitted'?'Awaiting review':label(reportRecord.review_state)):caseRecord?(caseRecord.state==='closed'?'Resolved':label(caseRecord.state)):'Public water-body record',attribution,recordDate:timestamp?date(timestamp):'',snapshotDate:date(snapshotAt),url:publicUrl?new URL(permalink).host:'Local preview',synthetic});
     } catch(err){setError(errorText(err));return;}
     try {
       // Fixed-size, locally drawn cards avoid waiting for the browser's idle
@@ -170,6 +185,8 @@ export default function ShareModal({
     synthetic,
     attribution,
     snapshotAt,
+    mapImage,
+    mapWater.locality,
   ]);
   const copy = async (text: string, message: string) => {
     try {
@@ -218,6 +235,8 @@ export default function ShareModal({
         images remain snapshots.
       </p>
       {error && <Notice error>{error}</Notice>}
+      {mapError&&<Notice error>{mapError}<button type="button" onClick={()=>setMapRetry(value=>value+1)}>Retry location map</button></Notice>}
+      {!mapImage&&!mapError&&<p role="status">Loading the lake’s location map…</p>}
       <div className="wf-share-layout">
         <div>
           <div className="wf-tabs" aria-label="Card format">
@@ -242,7 +261,7 @@ export default function ShareModal({
           />
           <button
             className="wf-button wf-full"
-            disabled={!blob}
+            disabled={!blob||!mapImage}
             onClick={download}
           >
             <Download size={17} />
@@ -315,7 +334,7 @@ export default function ShareModal({
               <button
                 className="wf-button"
                 onClick={nativeShare}
-                disabled={!blob}
+                disabled={!blob||!mapImage}
               >
                 <Share2 size={16} />
                 Open share sheet

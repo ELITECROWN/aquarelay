@@ -18,12 +18,15 @@ test('place search, office contacts, lake contacts and clean public menu',async(
  const nav=page.getByRole('navigation',{name:'Main navigation'});await expect(nav.getByRole('link',{name:'Public API'})).toHaveCount(0);await expect(nav.getByRole('link',{name:'Integrations'})).toHaveCount(0);await expect(nav.getByRole('link',{name:'Registry & Field Records'})).toHaveCount(0);
 });
 test('story and status downloads have correct dimensions and square remains available',async({page})=>{
+ await page.route('https://tile.openstreetmap.org/**',route=>route.fulfill({contentType:'image/png',headers:{'Access-Control-Allow-Origin':'*'},body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64')}));
  await page.goto('/waterbodies/wb-willow');await page.getByRole('button',{name:'Share',exact:true}).click();
  const canvas=page.getByRole('dialog').locator('canvas');await expect(canvas).toHaveAttribute('height','1920');
  for(const platform of ['Instagram Story','WhatsApp Status','Square']){
   await page.getByRole('button',{name:new RegExp(platform)}).click();
   const downloadReady=page.waitForEvent('download');await page.getByRole('button',{name:/Download.*PNG/}).click();
   const download=await downloadReady;const file=await download.path();const bytes=await fs.readFile(file!);expect(bytes.subarray(1,4).toString()).toBe('PNG');expect(bytes.readUInt32BE(16)).toBe(1080);expect(bytes.readUInt32BE(20)).toBe(platform==='Square'?1080:1920);
+  const pin=await canvas.evaluate((element, square)=>{const ctx=(element as HTMLCanvasElement).getContext('2d')!;return Array.from(ctx.getImageData(540,square?491:840,1,1).data);},platform==='Square');
+  expect(pin.slice(0,3)).toEqual([220,38,38]);
   await fs.copyFile(file!,path.join('docs/screenshots','share-'+platform.toLowerCase().replaceAll(' ','-')+'.png'));
  }
 });
