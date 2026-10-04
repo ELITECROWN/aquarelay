@@ -18,3 +18,5 @@ pytest-cache-files-*/
 
 .vercel
 YTDown*.mp4
+client_secret*.json
+gmail-render.env
