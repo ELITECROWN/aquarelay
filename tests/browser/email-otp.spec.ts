@@ -1,4 +1,30 @@
 import {test,expect} from '@playwright/test';
+test('only owner email switches to passwordless admin sign-in',async({page})=>{
+ let verified=false;let requests=0;
+ const owner={id:'owner',email:'dibyendukoley50@gmail.com',name:'Owner',role:'admin',email_verified:true};
+ await page.route('**/api/v1/auth/session',r=>r.fulfill({json:{user:verified?owner:null,csrf_token:'qa-csrf'}}));
+ await page.route('**/api/v1/auth/admin-email-code',r=>{
+   requests++;expect(r.request().postDataJSON()).toEqual({email:owner.email});
+   return r.fulfill({json:{otp_required:true,email:owner.email,csrf_token:'qa-csrf'}});
+ });
+ await page.route('**/api/v1/auth/verify-login-code',r=>{verified=true;return r.fulfill({json:{user:owner,csrf_token:'qa-csrf'}});});
+ await page.goto('/login');
+ await expect(page.getByLabel('Password',{exact:true})).toBeVisible();
+ await page.getByLabel('Email',{exact:true}).fill(owner.email);
+ await expect(page.getByLabel('Password',{exact:true})).toHaveCount(0);
+ await expect(page.getByText('Forgot your password?')).toHaveCount(0);
+ await page.getByLabel('Email',{exact:true}).fill('normal@example.org');
+ await expect(page.getByLabel('Password',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Create a citizen account'}).click();
+ await expect(page.getByLabel('Full Name')).toBeVisible();
+ await expect(page.getByLabel('Password',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Already have an account? Sign in'}).click();
+ await page.getByLabel('Email',{exact:true}).fill(owner.email);
+ await page.getByRole('button',{name:'Send verification code'}).click();
+ await page.getByLabel('Email verification code').fill('123456');
+ await page.getByRole('button',{name:'Verify and sign in'}).click();
+ await expect(page).toHaveURL(/explore/);expect(requests).toBe(1);
+});
 test('email code step supports retry, resend and completed sign-in',async({page})=>{
  let verified=false;
  const user={id:'qa-email-user',name:'Email QA',email:'qa@example.org',role:'citizen',username:'email_qa',email_verified:true};

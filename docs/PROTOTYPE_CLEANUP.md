@@ -22,7 +22,9 @@ background work must finish before cleanup. File deletion uses the durable
 outbox and never requires putting storage credentials in the browser.
 
 Production administration is reserved for `dibyendukoley50@gmail.com`.
-Register or sign in with that address and complete the email OTP verification.
+Enter that address on the sign-in page, click **Send verification code** and
+complete the email OTP verification. No password or separate registration is
+required for the owner. Other users retain password sign-in and registration.
 Only successful verification grants the owner the administrator role. Other
 accounts are denied by every platform administration endpoint, even if an older
 database entry gives them an administrator role. Local demonstration mode keeps

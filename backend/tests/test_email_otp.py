@@ -58,6 +58,36 @@ def test_owner_receives_admin_access_only_after_otp(client,monkeypatch):
     assert verified.json()['user']['role']=='admin'
     assert client.get('/api/v1/admin/cleanup/storage-status').status_code==200
 
+def test_owner_passwordless_code_and_other_email_denial(client,monkeypatch):
+    setup_sender(monkeypatch);monkeypatch.setenv('DEMO_MODE','false')
+    headers={'X-CSRF-Token':client.get('/api/v1/auth/session').json()['csrf_token']}
+    endpoint='/api/v1/auth/admin-email-code'
+    assert client.post(endpoint,json={'email':'other@example.org'},headers=headers).status_code==403
+    email='dibyendukoley50@gmail.com'
+    result=client.post(endpoint,json={'email':email},headers=headers)
+    assert result.status_code==200,result.text
+    assert result.json()['otp_required'] is True
+    assert client.get('/api/v1/auth/session').json()['user'] is None
+    assert client.post(endpoint,json={'email':email},headers=headers).status_code==429
+    from app.db import SessionLocal
+    from app.models import Job,User
+    with SessionLocal() as db:
+        assert db.scalar(select(User).where(User.email==email)).role=='citizen'
+        job=db.scalar(select(Job).where(Job.data['sensitive'].as_boolean()==True))
+        code=re.search(r'\b\d{6}\b',job.data['message']).group()
+    verified=client.post('/api/v1/auth/verify-login-code',json={'email':email,'code':code},headers=headers)
+    assert verified.status_code==200,verified.text
+    assert verified.json()['user']['role']=='admin'
+    assert client.get('/api/v1/admin/cleanup/storage-status').status_code==200
+
+def test_owner_passwordless_fails_closed_without_sender(client,monkeypatch):
+    monkeypatch.delenv('MAILJET_API_KEY',raising=False)
+    monkeypatch.delenv('GMAIL_REFRESH_TOKEN',raising=False)
+    headers={'X-CSRF-Token':client.get('/api/v1/auth/session').json()['csrf_token']}
+    result=client.post('/api/v1/auth/admin-email-code',json={'email':'dibyendukoley50@gmail.com'},headers=headers)
+    assert result.status_code==503
+    assert client.get('/api/v1/auth/session').json()['user'] is None
+
 def test_required_otp_does_not_fall_back_when_sender_is_unavailable(client,monkeypatch):
     monkeypatch.setenv('EMAIL_OTP_REQUIRED','true')
     headers={'X-CSRF-Token':client.get('/api/v1/auth/session').json()['csrf_token']}

@@ -5,6 +5,7 @@ dist
 .git
 test-results
 playwright-report
+artifacts
 pytest-cache-files-*
 aquarelay-tests-*
 *.sqlite*

@@ -1897,6 +1897,7 @@ export function OrganisationsPage() {
   );
 }
 export function LoginPage() {
+  const [signInEmail,setSignInEmail]=useState('');
   const [otpEmail,setOtpEmail]=useState('');
   const [otpMessage,setOtpMessage]=useState('');
   const config = useConfig();
@@ -1905,6 +1906,7 @@ export function LoginPage() {
     [busy, setBusy] = useState(false);
   const { user, refresh, setUser } = useSession(),
     navigate = useNavigate();
+  const adminEmail = signInEmail.trim().toLowerCase() === 'dibyendukoley50@gmail.com';
 
   const handleDemoLogin = async (email: string) => {
     setError("");
@@ -1973,7 +1975,7 @@ export function LoginPage() {
             </button>
           </div>
         ) : otpEmail ? (
-          <form className="form-stack" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const f=new FormData(e.currentTarget);const data=await api<{user:User;csrf_token:string}>('/auth/verify-login-code',{method:'POST',body:JSON.stringify({email:otpEmail,code:f.get('code')})});setCsrf(data.csrf_token);setUser({...data.user,csrf_token:data.csrf_token});await refresh();navigate('/explore');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
+          <form key="otp" className="form-stack" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const f=new FormData(e.currentTarget);const data=await api<{user:User;csrf_token:string}>('/auth/verify-login-code',{method:'POST',body:JSON.stringify({email:otpEmail,code:f.get('code')})});setCsrf(data.csrf_token);setUser({...data.user,csrf_token:data.csrf_token});await refresh();navigate('/explore');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
             <p>A six-digit verification code has been queued for <strong>{otpEmail}</strong>. Check your inbox and spam folder. It expires in 10 minutes.</p>
             <label>Email verification code<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required autoFocus/></label>
             {error&&<p role="alert" className="error">{error}</p>}{otpMessage&&<p role="status">{otpMessage}</p>}
@@ -1983,6 +1985,7 @@ export function LoginPage() {
           </form>
         ) : (
           <form
+            key="credentials"
             className="form-stack"
             onSubmit={async (e) => {
               e.preventDefault();
@@ -1990,12 +1993,12 @@ export function LoginPage() {
               setBusy(true);
               const f = new FormData(e.currentTarget);
               try {
-                const endpoint = register ? "/auth/register" : "/auth/login";
+                const endpoint = adminEmail ? '/auth/admin-email-code' : register ? "/auth/register" : "/auth/login";
                 const payload: any = {
                   email: f.get("email"),
-                  password: f.get("password"),
+                  ...(!adminEmail ? {password: f.get("password")} : {}),
                 };
-                if (register) {
+                if (register && !adminEmail) {
                   payload.name = f.get("name");
                   const rawU = f.get("username");
                   payload.username = rawU ? String(rawU).replace(/^@+/, "").trim() : undefined;
@@ -2020,7 +2023,7 @@ export function LoginPage() {
               }
             }}
           >
-            {register && (
+            {register && !adminEmail && (
               <>
                 <label>
                   Full Name
@@ -2055,9 +2058,9 @@ export function LoginPage() {
             )}
             <label>
               Email
-              <input name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
+              <input name="email" type="email" autoComplete="email" placeholder="you@example.com" value={signInEmail} onChange={e=>{setSignInEmail(e.target.value);setError('');}} required />
             </label>
-            <label>
+            {!adminEmail && <label>
               Password
               <input
                 name="password"
@@ -2066,17 +2069,18 @@ export function LoginPage() {
                 autoComplete={register ? "new-password" : "current-password"}
                 required
               />
-            </label>
+            </label>}
+            {adminEmail && <p>Administrator sign-in uses a code sent to your email. No password is required.</p>}
             {error && (
               <p className="error-message" role="alert" style={{ background: "#fee2e2", color: "#b91c1c", padding: "10px 14px", borderRadius: "8px", border: "1px solid #f87171" }}>
                 {error}
               </p>
             )}
             <button className="button primary full" disabled={busy}>
-              {busy ? "Signing in…" : register ? "Create account" : "Sign in"}
+              {busy ? (adminEmail ? 'Sending code…' : "Signing in…") : adminEmail ? 'Send verification code' : register ? "Create account" : "Sign in"}
               <ArrowRight size={17} />
             </button>
-            <button
+            {!adminEmail && <button
               className="text-button"
               type="button"
               onClick={() => {
@@ -2087,10 +2091,10 @@ export function LoginPage() {
               {register
                 ? "Already have an account? Sign in"
                 : "Create a citizen account"}
-            </button>
+            </button>}
 
             {/* Quick 1-Click Demo Login */}
-            <p>{config.data?.capabilities?.email === 'account_email_configured' ? <Link to="/account/recovery">Forgot your password?</Link> : 'Email password recovery is unavailable. Keep your password securely.'}</p>
+            {!adminEmail && <p>{config.data?.capabilities?.email === 'account_email_configured' ? <Link to="/account/recovery">Forgot your password?</Link> : 'Email password recovery is unavailable. Keep your password securely.'}</p>}
             {config.data?.demo_mode && <div className="demo-accounts" style={{ marginTop: "16px", padding: "14px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                 <Badge state="warning">1-CLICK DEMO ACCESS</Badge>

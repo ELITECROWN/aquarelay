@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .db import get_db
 from .models import LoginSession, Membership, User, Job, Audit, uid, utcnow
-from .admin_policy import owner_verified, platform_admin
+from .admin_policy import OWNER_EMAIL, owner_verified, platform_admin
 
 router = APIRouter()
 hasher = PasswordHasher()
@@ -133,9 +133,37 @@ class Credentials(BaseModel):
     email: str = Field(min_length=5, max_length=254)
     password: str = Field(min_length=8, max_length=128)
 
+class AdminEmail(BaseModel):
+    email: str = Field(min_length=5, max_length=254)
+
+@router.post('/auth/admin-email-code')
+def admin_email_code(body: AdminEmail, request: Request, db: Session = Depends(get_db)):
+    validate_csrf(request, db)
+    email = body.email.strip().lower()
+    if email != OWNER_EMAIL:
+        raise HTTPException(403, 'Email-only administrator sign-in is restricted to the project owner.')
+    from .mail import configured
+    if not configured():
+        raise HTTPException(503, 'Email verification delivery is unavailable. Please try again later.')
+    # Serialize owner creation and code requests; the existing per-account cooldown applies.
+    lock_usernames(db)
+    user = db.scalar(select(User).where(User.email == email).with_for_update())
+    if user is None:
+        user = User(id=uid('user'), email=email, name='AquaRelay administrator',
+                    password_hash=hasher.hash(secrets.token_urlsafe(48)), role='citizen',
+                    preferences={}, data={})
+        db.add(user)
+        db.flush()
+    if not account_available(user):
+        raise HTTPException(403, 'This account is unavailable.')
+    # No authenticated session or privilege is issued before the emailed code is verified.
+    return queue_login_otp(db, user, request)
+
 @router.post("/auth/login")
 def login(body: Credentials, request: Request, response: Response, db: Session = Depends(get_db)):
     validate_csrf(request, db)
+    if body.email.strip().lower() == OWNER_EMAIL:
+        return admin_email_code(AdminEmail(email=body.email), request, db)
     user = db.scalar(select(User).where(User.email == body.email.lower().strip()))
     try:
         valid = account_available(user) and hasher.verify(user.password_hash, body.password)
