@@ -630,7 +630,7 @@ test("original landing and tracking presentation retain record-backed behaviour"
   await expect(page.locator(".pureflow-hero-container")).toBeVisible();
   await expect(page.locator(".pureflow-about-section")).toBeAttached();
   await expect(page.locator(".river-clean-cinema-container")).toBeAttached();
-  await expect(page.locator(".gallery-stream-wrapper")).toBeAttached();
+  await expect(page.locator(".fullscreen-stream-track")).toBeAttached();
   await expect(page.locator(".pureflow-footer")).toBeAttached();
   await expect(page.locator(".public-nav")).toHaveCount(0);
   await page.locator(".lake-delivery-bar").click();

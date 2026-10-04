@@ -168,3 +168,29 @@ uses a static, single-viewport gallery. Existing photos and page content remain.
 Validation: production build, 23 unit tests and desktop/mobile browser checks
 passed. Browser checks cover edge-to-edge dimensions, absent outer borders and
 corner radius, pinned positioning and image-transform progression.
+
+### 4 October 2026 — Scan remediation
+
+1. Decorative WebGL initialization now fails safely without unmounting the app.
+2. Water background and pointer trail skip reduced-motion requests.
+3. Pending report retries use the durable draft, including completed upload IDs.
+   Pending submissions cannot be edited through Back/Save draft. Server replay
+   compares a canonical payload fingerprint and rejects changed submissions with
+   409; pre-fingerprint records use stored-field/evidence comparisons.
+4. Explicit related cases are fetched directly rather than relying on first 100.
+5. Bengaluru default applies once; clearing a search preserves the viewport.
+6. Illustrative restoration footage no longer carries a LIVE caption.
+7. Landing regression uses the fullscreen gallery selector.
+
+Validation: production build and 23 frontend unit tests passed. Backend suite
+119 passed, 2 dedicated PostgreSQL checks skipped; foundation checks rerun after
+legacy-replay handling (22 passed). Targeted browser checks passed for WebGL
+failure, reduced motion, landing/tracking, report/map/share flow, chunk fallback,
+explicit case beyond the first page, and search-clear viewport preservation.
+
+Remaining deployment capabilities require configuration rather than UI claims:
+GEMINI_API_KEY and GEMINI_MODEL on Render for opt-in AI; VAPID keys and a mailto
+support contact for Web Push; an agreed recipient endpoint/credentials and
+organisation ownership for external authority handoff. Email remains deliberately
+disabled per owner preference. Full standards conformance and dedicated live-like
+PostgreSQL concurrency verification remain separate production validation work.

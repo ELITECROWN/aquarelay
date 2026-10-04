@@ -11,6 +11,7 @@ export default function ThreeDWaterScene({
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
@@ -25,11 +26,12 @@ export default function ThreeDWaterScene({
     camera.position.set(0, 7, 16);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({
+    let renderer: THREE.WebGLRenderer;
+    try { renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
       powerPreference: "high-performance",
-    });
+    }); } catch { return; }
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;

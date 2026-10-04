@@ -1,5 +1,14 @@
 import {test,expect} from '@playwright/test';
 const blankTile=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64');
+test('explicit case outside first page remains available for linking',async({page})=>{
+ await page.route('https://tile.openstreetmap.org/**',r=>r.fulfill({contentType:'image/png',body:blankTile}));
+ await page.goto('/login');await page.getByLabel('Email',{exact:true}).fill('citizen@demo.aquarelay.local');await page.getByLabel('Password',{exact:true}).fill('DemoPass123!');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/explore/);
+ const record=await (await page.request.get('/api/v1/cases/case-current')).json();
+ await page.route('**/api/v1/cases?page_size=100',r=>r.fulfill({json:{items:[],total:101}}));await page.route('**/api/v1/reports/candidates?*',r=>r.fulfill({json:{items:[],assistance:'Rules based'}}));
+ await page.goto('/report?waterbody=wb-reedwater&related_case=case-current');await expect(page.getByRole('combobox',{name:'Water body',exact:true})).toHaveValue('wb-reedwater');
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('radio',{name:'Foam',exact:true}).check();await page.getByPlaceholder('Describe the location and visible observation. It is fine to be unsure.').fill('Foam observed beside the bank, cause unknown.');await page.getByRole('button',{name:'Continue',exact:true}).click();
+ await expect(page.getByRole('radio',{name:new RegExp(record.case.title)})).toBeChecked();
+});
 test.afterEach(async({},info)=>{if(info.error)console.log(info.error.message)});
 test('report from selected water outside first page, pick map position and share synced observation',async({page})=>{
  await page.route('https://tile.openstreetmap.org/**',r=>r.fulfill({contentType:'image/png',body:blankTile}));

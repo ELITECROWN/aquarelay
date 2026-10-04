@@ -8,6 +8,10 @@ test('Explore starts at Bengaluru and permits manual map movement',async({page})
  const canvas=page.getByTestId('interactive-map').locator('canvas');await expect(canvas).toBeVisible();
  // Bengaluru occupies these street-map tiles at city scale; an India-wide view does not.
  await expect.poll(()=>tiles.some(t=>t.z>=11&&Math.abs(t.x/2**t.z-(77.5946+180)/360)<0.005)).toBe(true);
- const before=tiles.length;await canvas.focus();await canvas.press('ArrowRight');
+ const before=tiles.length;await canvas.focus();for(let i=0;i<10;i++)await canvas.press('ArrowRight');
  await expect.poll(()=>tiles.length).toBeGreaterThan(before);
+ const search=page.getByPlaceholder('Name, alias, or locality');await search.fill('Willow');
+ await expect(page.getByRole('button',{name:/Demo Willow Pond.*on map/})).toBeVisible();
+ await search.fill('');await expect(page.getByText('7 registered water bodies')).toBeVisible();
+ await expect(page.getByRole('button',{name:/Demo Willow Pond.*on map/})).toBeVisible();
 });

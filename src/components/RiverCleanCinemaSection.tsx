@@ -109,7 +109,7 @@ export default function RiverCleanCinemaSection() {
             />
             <div className="video-live-overlay-tag">
               <span className="live-ping-dot" />
-              <span>RIVER REJUVENATION CAM · LIVE PLAYBACK</span>
+              <span>ILLUSTRATIVE RESTORATION FOOTAGE</span>
             </div>
           </div>
         </div>

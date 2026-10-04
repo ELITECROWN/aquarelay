@@ -167,6 +167,9 @@ export function syncDraft(
   if (draft.status === "synced") return Promise.resolve(draft);
   if (running.has(draft.id)) return running.get(draft.id)!;
   const task = (async () => {
+    const stored=(await listDrafts(accountId)).find(item=>item.id===draft.id);
+    if(stored&&['pending','failed','synced'].includes(stored.status))draft=stored;
+    if(draft.status==='synced')return draft;
     let next: LocalDraft = {
       ...draft,
       status: "pending",

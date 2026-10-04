@@ -99,7 +99,7 @@ describe("offline report acknowledgement and retry", () => {
     expect(saved.status).toBe("failed");
     expect(saved.reportId).toBeUndefined();
     failing = false;
-    expect((await syncDraft(saved, draft.accountId)).status).toBe("synced");
+    expect((await syncDraft(draft, draft.accountId)).status).toBe("synced");
     expect(identities).toEqual([draft.id, draft.id]);
   });
   it("stops a queued contribution when the server session has changed accounts", async () => {
@@ -154,7 +154,7 @@ describe("offline report acknowledgement and retry", () => {
     expect(saved.evidenceIds).toEqual(["ev-first"]);
     expect(saved.media).toHaveLength(2);
     secondAttemptFails = false;
-    expect((await syncDraft(saved, draft.accountId)).status).toBe("synced");
+    expect((await syncDraft(mediaDraft, draft.accountId)).status).toBe("synced");
     expect(uploaded).toEqual([
       "synthetic-first",
       "synthetic-second",

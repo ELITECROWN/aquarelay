@@ -48,6 +48,16 @@ def test_registry_has_provenance_and_source_backed_relationships(client):
     assert lake["relationships"] and all(r["source_id"] for r in lake["relationships"])
     assert lake["actions"] and lake["nearby"]
 
+def test_report_replay_rejects_changed_payload(client):
+    headers=login(client)
+    original=report_payload(client_id='replay-immutable-001')
+    first=client.post('/api/v1/reports',json=original,headers=headers)
+    assert first.status_code==201
+    assert client.post('/api/v1/reports',json={**original,'description':'Different observation must not silently replace an existing report.'},headers=headers).status_code==409
+    replay=client.post('/api/v1/reports',json=original,headers=headers)
+    assert replay.status_code==200
+    assert replay.json()['report']['id']==first.json()['report']['id']
+
 
 def test_submission_requires_csrf_and_replays_client_id(client):
     headers = login(client)

@@ -114,6 +114,8 @@ export default function ReportPage() {
     [message, setMessage] = useState(""),
     [submitted, setSubmitted] = useState<LocalDraft>();
   const requestedWaterId=params.get("waterbody") || params.get("waterbody_id") || "";
+  const requestedCaseId=params.get("related_case") || "";
+  const selectedCase=useRecord<{case:Case}>(`/api/v1/cases/${encodeURIComponent(requestedCaseId)}`,!!requestedCaseId);
   const selectedWaterId=submitted?.values.waterbody_id || values.waterbody_id || requestedWaterId;
   const selectedWater=useRecord<{waterbody:Water}>(`/api/v1/waterbodies/${encodeURIComponent(selectedWaterId)}`,!!selectedWaterId);
   const submittedRecord=useRecord<{case:Case & {review_state:string;synthetic:boolean};reports:{id:string;description:string;observed_at:string;review_state:string}[]}>(`/api/v1/cases/${submitted?.caseId}`,!!submitted?.caseId);
@@ -163,7 +165,8 @@ export default function ReportPage() {
   }, [user?.id]);
   const results = (Array.isArray(waters.data) ? waters.data : waters.data?.items) || [];
   const waterList=selectedWater.data?.waterbody&&!results.some(w=>w.id===selectedWater.data!.waterbody.id)?[selectedWater.data.waterbody,...results]:results;
-  const caseList = (Array.isArray(cases.data) ? cases.data : cases.data?.items) || [];
+  const caseResults = (Array.isArray(cases.data) ? cases.data : cases.data?.items) || [];
+  const caseList=selectedCase.data?.case&&!caseResults.some(c=>c.id===selectedCase.data!.case.id)?[selectedCase.data.case,...caseResults]:caseResults;
   const candidateList = candidates.data?.items || [];
 
   useEffect(() => {
@@ -261,7 +264,9 @@ export default function ReportPage() {
     setBusy(true);
     setError("");
     try {
-      const draft = await saveDraft(draftValue("pending"));
+      const persisted=current&&canRetryDraft(current,user.id)?(await listDrafts(user.id)).find(d=>d.id===current.id):undefined;
+      if(current&&canRetryDraft(current,user.id)&&!persisted)throw new Error('The pending report is unavailable on this device. Refresh before retrying.');
+      const draft = persisted || await saveDraft(draftValue("pending"));
       setCurrent(draft);
       if (!navigator.onLine) {
         setMessage(
@@ -420,6 +425,7 @@ export default function ReportPage() {
           </ol>
           {error && <Notice error>{error}</Notice>}
           {message && <Notice>{message}</Notice>}
+          {current&&canRetryDraft(current,user.id)&&<Notice>This submission is locked for safe retry. Retry sends the original saved observation and resumes completed uploads. Start a new report after this submission is acknowledged.</Notice>}
           <div className="wf-form-body">
             {step === 0 && (
               <>
@@ -793,7 +799,7 @@ export default function ReportPage() {
           <footer className="wf-form-footer">
             <button
               className="wf-button secondary"
-              disabled={busy}
+              disabled={busy || !!current && canRetryDraft(current,user.id)}
               onClick={save}
             >
               <Save size={16} />
@@ -803,7 +809,7 @@ export default function ReportPage() {
               {step > 0 && (
                 <button
                   className="wf-button ghost"
-                  disabled={busy}
+                  disabled={busy || !!current && canRetryDraft(current,user.id)}
                   onClick={() => {
                     setStep(step - 1);
                     setError("");

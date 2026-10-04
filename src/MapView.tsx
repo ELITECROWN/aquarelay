@@ -38,6 +38,7 @@ export default function MapView({
   const current = useRef(items);
   const locationMarker=useRef<Marker|null>(null);
   const autoFit=useRef(!defaultToBengaluru);
+  const initialViewportApplied=useRef(false);
   current.current = items;
   const configuredStyle = import.meta.env.VITE_MAP_STYLE_URL;
   const demoContext =
@@ -224,9 +225,9 @@ export default function MapView({
           geometry: w.geometry!,
         })),
     });
-    if(autoFit.current)fit();
+    if(autoFit.current&&!defaultToBengaluru)fit();
   }, [items, ready]);
-  useEffect(()=>{if(!ready||!map.current)return;autoFit.current=!defaultToBengaluru;if(defaultToBengaluru)map.current.jumpTo({center:[77.5946,12.9716],zoom:11.6});else fit();},[defaultToBengaluru,ready]);
+  useEffect(()=>{if(!ready||!map.current)return;autoFit.current=!defaultToBengaluru;if(defaultToBengaluru){if(!initialViewportApplied.current)map.current.jumpTo({center:[77.5946,12.9716],zoom:11.6});}else fit();initialViewportApplied.current=true;},[defaultToBengaluru,ready]);
   useEffect(() => {
     const water = items.find((w) => w.id === selected);
     if (water && ready)

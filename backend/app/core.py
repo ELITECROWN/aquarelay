@@ -346,8 +346,20 @@ class ReportInput(BaseModel):
 
 @router.post("/reports", status_code=201)
 def submit_report(body:ReportInput,response:Response,db:Session=Depends(get_db),user:User=Depends(require_user)):
+    payload=body.model_dump(mode='json');payload['observed_at']=iso(body.observed_at)
+    fingerprint=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    def check_replay(report):
+        if report.data.get('submission_fingerprint') and report.data['submission_fingerprint']!=fingerprint:
+            raise HTTPException(409,'This submission ID already records a different observation. Retry the original saved report; use a new submission for new observations.')
+        if not report.data.get('submission_fingerprint'):
+            fields=('waterbody_id','observation_type','description','latitude','longitude','language','synthetic')
+            same=all(getattr(report,key)==getattr(body,key) for key in fields) and iso(datetime.fromisoformat(report.observed_at))==iso(body.observed_at) and str(report.count_estimate or '')==str(body.count_estimate or '')
+            attached=set(db.scalars(select(Evidence.id).where(Evidence.report_id==report.id)))
+            if not same or attached!=set(body.evidence_ids) or (body.related_case_id and body.related_case_id!=report.case_id):
+                raise HTTPException(409,'This submission ID already records a different observation. Retry the original saved report.')
     existing=db.scalar(select(Report).where(Report.user_id==user.id,Report.client_id==body.client_id))
     if existing:
+        check_replay(existing)
         response.status_code=200
         return {"report":{"id":existing.id,"client_id":existing.client_id,"created_at":existing.created_at,"synthetic":existing.synthetic},"case_id":existing.case_id,"replayed":True}
     wb=get_record(db,WaterBody,body.waterbody_id)
@@ -378,7 +390,7 @@ def submit_report(body:ReportInput,response:Response,db:Session=Depends(get_db),
         case=Case(id=uid("case"),waterbody_id=wb.id,organisation_id=assigned,title=body.observation_type.replace("_"," ").title()+" reported",description=body.description,observed_at=iso(body.observed_at),synthetic=body.synthetic)
         db.add(case)
         db.flush()
-    report=Report(id=uid("report"),user_id=user.id,client_id=body.client_id,waterbody_id=wb.id,case_id=case.id,observation_type=body.observation_type,description=body.description,observed_at=iso(body.observed_at),latitude=body.latitude,longitude=body.longitude,count_estimate=body.count_estimate,language=body.language,synthetic=body.synthetic,data={"original_text":body.description})
+    report=Report(id=uid("report"),user_id=user.id,client_id=body.client_id,waterbody_id=wb.id,case_id=case.id,observation_type=body.observation_type,description=body.description,observed_at=iso(body.observed_at),latitude=body.latitude,longitude=body.longitude,count_estimate=body.count_estimate,language=body.language,synthetic=body.synthetic,data={"original_text":body.description,"submission_fingerprint":fingerprint})
     db.add(report)
     db.flush()
     for e in attached:
@@ -394,6 +406,7 @@ def submit_report(body:ReportInput,response:Response,db:Session=Depends(get_db),
         db.rollback()
         existing=db.scalar(select(Report).where(Report.user_id==user.id,Report.client_id==body.client_id))
         if existing:
+            check_replay(existing)
             response.status_code=200
             return {"report":{"id":existing.id,"client_id":existing.client_id,"synthetic":existing.synthetic},"case_id":existing.case_id,"replayed":True}
         raise
