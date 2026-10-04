@@ -65,7 +65,7 @@ export default function ShareModal({
   const sources = useRecord<{
     waterbody: Water;
     sources: { id: string; name: string; attribution?: string }[];
-  }>(`/api/v1/waterbodies/${waterbody.id}`, open);
+  }>(`/api/v1/waterbodies/${waterbody.id}?include_nearby=false`, open);
   const attribution =
     sourceAttribution ||
     (sources.data?.waterbody.id === waterbody.id && sources.data.sources.length

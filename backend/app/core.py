@@ -269,7 +269,7 @@ def registry_map(q:str='',type:str='',db:Session=Depends(get_db)):
     return {'items':[{**{k:getattr(w,k) for k in keys},'case_count':counts.get(w.id,0)} for w in rows],'total':total,'truncated':total>len(rows)}
 
 @router.get("/waterbodies/{waterbody_id}")
-def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = Depends(get_db)):
+def passport(waterbody_id: str, as_of: str = "", since: str = "", include_nearby: bool = True, db: Session = Depends(get_db)):
     from .authority_directory import regional_contacts
     wb=get_record(db,WaterBody,waterbody_id)
     cutoff=iso(as_of,end_of_day=True) if as_of else None
@@ -290,12 +290,15 @@ def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = 
     if not DEMO_MODE: near_statement=near_statement.where(WaterBody.synthetic.is_(False))
     if db.bind.dialect.name=="postgresql":
         near_statement=near_statement.where(text("ST_DWithin(geog,ST_SetSRID(ST_MakePoint(:near_lon,:near_lat),4326)::geography,5000)")).params(near_lon=wb.longitude,near_lat=wb.latitude)
-    for other in db.scalars(near_statement):
+    near_rows=[];near_distances={}
+    for other in db.scalars(near_statement) if include_nearby else []:
         if cutoff and other.created_at>cutoff:
             continue
         d=distance(wb.latitude,wb.longitude,other.latitude,other.longitude)
         if d<=5000:
-            nearby.append({**waterbody_json(db,other,cutoff),"distance_m":round(d),"connection_notice":"Nearby distance does not establish a hydrological connection."})
+            near_rows.append(other);near_distances[other.id]=round(d)
+    near_summaries=([waterbody_json(db,other,cutoff) for other in near_rows] if cutoff else waterbody_page_json(db,near_rows)) if near_rows else []
+    nearby=[{**item,'distance_m':near_distances[item['id']],'connection_notice':'Nearby distance does not establish a hydrological connection.'} for item in near_summaries]
     org_ids={s.organisation_id for s in sources if s.organisation_id} | {c.organisation_id for c in cases if c.organisation_id}
     changes=[{"record_id":e.id,"title":e.title,"created_at":e.created_at,"href":f"/incidents/{e.case_id}" if e.case_id else f"/waterbodies/{wb.id}","description":e.description} for e in events if e.created_at>=since_time]
     case_items=[case_snapshot(db,c,cutoff) if cutoff else case_json(db,c) for c in cases]

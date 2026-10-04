@@ -247,8 +247,11 @@ export default function MapView({
       markers.forEach((m) => m.remove());
       markers = [];
       if (instance.getZoom() > 12) {
+        let labelCount=0;
         items.forEach((w) => {
           if (!instance.getBounds().contains([w.longitude,w.latitude])) return;
+          if(labelCount>=80&&w.id!==selected)return;
+          labelCount++;
           const button = document.createElement("button");
           button.className = "map-place-label";
           button.textContent = w.name;
@@ -305,7 +308,7 @@ export default function MapView({
       instance.off("zoomend", update);
       markers.forEach((m) => m.remove());
     };
-  }, [ready, items]);
+  }, [ready, items, selected]);
   function locate() {
     if (!navigator.geolocation) {
       setLocationMessage("Location unavailable. Select a place from the list.");

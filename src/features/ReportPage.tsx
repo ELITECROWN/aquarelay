@@ -120,7 +120,7 @@ export default function ReportPage() {
   const requestedCaseId=params.get("related_case") || "";
   const selectedCase=useRecord<{case:Case}>(`/api/v1/cases/${encodeURIComponent(requestedCaseId)}`,!!requestedCaseId);
   const selectedWaterId=submitted?.values.waterbody_id || values.waterbody_id || requestedWaterId;
-  const selectedWater=useRecord<{waterbody:Water}>(`/api/v1/waterbodies/${encodeURIComponent(selectedWaterId)}`,!!selectedWaterId);
+  const selectedWater=useRecord<{waterbody:Water}>(`/api/v1/waterbodies/${encodeURIComponent(selectedWaterId)}?include_nearby=false`,!!selectedWaterId);
   const submittedRecord=useRecord<{case:Case & {review_state:string;synthetic:boolean};reports:{id:string;description:string;observed_at:string;review_state:string}[]}>(`/api/v1/cases/${submitted?.caseId}`,!!submitted?.caseId);
   const submittedReport=submittedRecord.data?.reports.find(report=>report.id===submitted?.reportId);
   const [online, setOnline] = useState(navigator.onLine);

@@ -293,8 +293,9 @@ export function ExplorePage() {
   });
   const passport = useQuery({
     queryKey: ["passport", selected],
-    queryFn: () => api<Passport>(`/waterbodies/${selected}`),
+    queryFn: () => api<Passport>(`/waterbodies/${selected}?include_nearby=false`),
     enabled: !!selected,
+    staleTime: 60000,
   });
   const [share, setShare] = useState(false);
   const { user } = useSession(),

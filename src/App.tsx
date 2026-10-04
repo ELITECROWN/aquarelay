@@ -178,7 +178,7 @@ export default function App() {
   return (
     <div className="pureflow-app-root">
       <BefreakyPreloader />
-      <ThreeDWaterScene />
+      <ThreeDWaterScene active={isHome} />
       <WaterSlideTrail />
       <SideMenuDrawer />
       <PureFlowNavbar />

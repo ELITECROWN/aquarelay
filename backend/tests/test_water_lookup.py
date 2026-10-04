@@ -10,6 +10,21 @@ def test_batched_summaries_preserve_record_values():
         expected=[core.waterbody_json(db,row) for row in rows]
         assert core.waterbody_page_json(db,rows)==expected
 
+def test_explorer_passport_can_skip_nearby_work(monkeypatch):
+    with TestClient(app) as client:
+        original=core.waterbody_page_json
+        def forbidden(*args,**kwargs):
+            raise AssertionError('Explore sidebar must not load nearby summaries')
+        monkeypatch.setattr(core,'waterbody_page_json',forbidden)
+        response=client.get('/api/v1/waterbodies/wb-reedwater?include_nearby=false')
+        assert response.status_code==200
+        assert response.json()['nearby']==[]
+        assert response.json()['waterbody']['id']=='wb-reedwater'
+        monkeypatch.setattr(core,'waterbody_page_json',original)
+        full=client.get('/api/v1/waterbodies/wb-reedwater')
+        assert full.status_code==200
+        assert full.json()['waterbody']==response.json()['waterbody']
+
 def test_registry_page_uses_bounded_selects():
     with TestClient(app) as client:
         selects=[]

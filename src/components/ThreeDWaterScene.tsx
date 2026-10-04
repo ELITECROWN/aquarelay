@@ -3,12 +3,15 @@ import * as THREE from "three";
 
 export default function ThreeDWaterScene({
   className = "",
+  active = true,
 }: {
   className?: string;
+  active?: boolean;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if(!active)return;
     const container = mountRef.current;
     if (!container) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -313,7 +316,7 @@ export default function ThreeDWaterScene({
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [active]);
 
   return (
     <div
