@@ -27,7 +27,6 @@ const MENU_OPTIONS = [
   { to: "/", title: "Home", icon: Home },
   { to: "/following", title: "Following", icon: Truck },
   { to: "/integrations", title: "Integrations", icon: Building2 },
-  { to: "/developers", title: "Public API", icon: Leaf },
   { to: "/explore", title: "Explore Waters", icon: Compass },
   { to: "/report", title: "Report Observation", icon: Plus, badge: "+ Report" },
   { to: "/notifications", title: "Updates & Alerts", icon: Bell },
@@ -153,7 +152,7 @@ export default function SideMenuDrawer(props?: {
 
         {/* Navigation List: High-contrast Yellow Theme */}
         <nav className="pureflow-drawer-nav" aria-label="Main navigation">
-          {MENU_OPTIONS.map((item) => {
+          {MENU_OPTIONS.filter(item=>!["/integrations","/workspace","/registry"].includes(item.to)||user?.role==="admin"||!!user?.organisation_id).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.to;
             return (

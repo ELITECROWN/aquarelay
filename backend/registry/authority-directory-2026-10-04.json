@@ -1,0 +1,236 @@
+[
+  {
+    "id": "org-authority-panihati",
+    "name": "Panihati Municipality",
+    "description": "Municipal services contact for enquiries in Panihati and the Sodepur area. Confirm the ward and water-body ownership with the office.",
+    "email": "panihatimunicipality@yahoo.co.in",
+    "address": "Municipal Office, Panihati, North 24 Parganas, West Bengal 700114",
+    "phone": "033-2553-2909",
+    "service_regions": [
+      "sodepur-barrackpore"
+    ],
+    "places": [
+      "Sodepur",
+      "Sodpur",
+      "Panihati",
+      "Ghola",
+      "Agarpara",
+      "West Bengal"
+    ],
+    "kind": "Municipal services",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "West Bengal municipal directory",
+        "url": "https://udma.wb.gov.in/Main/urban_local_bodies"
+      },
+      {
+        "title": "Published Panihati municipal letter",
+        "url": "https://www.greentribunal.gov.in/sites/default/files/news_updates/Reply%20to%20O.A%2003%20%20of%202026_pagenumber.pdf"
+      }
+    ],
+    "contact_note": ""
+  },
+  {
+    "id": "org-authority-barrackpore",
+    "name": "Barrackpore Municipality",
+    "description": "Municipal services and civic enquiries for Barrackpore. The office can advise on the relevant ward and responsible department.",
+    "email": "chairman@bkpmuty.in",
+    "address": "B.T. Road, P.O. Talpukur, North 24 Parganas, West Bengal 700120",
+    "phone": "033-2592-0221",
+    "service_regions": [
+      "sodepur-barrackpore"
+    ],
+    "places": [
+      "Barrackpore",
+      "Barrackpur",
+      "Talpukur",
+      "West Bengal"
+    ],
+    "kind": "Municipal services",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "Official municipal contact page",
+        "url": "https://www.bkpmuty.in/"
+      },
+      {
+        "title": "District municipal address directory",
+        "url": "https://north24parganas.gov.in/public-utility-category/municipality/"
+      }
+    ],
+    "contact_note": ""
+  },
+  {
+    "id": "org-authority-khardah",
+    "name": "Khardah Municipality",
+    "description": "Published municipal contact for Khardah and Khardaha civic enquiries. Confirm current office details before visiting.",
+    "email": "khardahmunicipality@yahoo.co.in",
+    "address": "Municipal Office, B.T. Road, Khardah, North 24 Parganas, West Bengal 700117",
+    "phone": "033-2553-3060",
+    "service_regions": [
+      "sodepur-barrackpore"
+    ],
+    "places": [
+      "Khardah",
+      "Khardaha",
+      "Rahara",
+      "Sodepur",
+      "Barrackpore",
+      "West Bengal"
+    ],
+    "kind": "Municipal services",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "Official municipal notice with contact details",
+        "url": "https://khardahmunicipality.in/wp-content/uploads/2022/06/Qtn-Kdhm_265_22-CASH-min.pdf"
+      }
+    ],
+    "contact_note": "Contact source is a published 2022 municipal notice; continued availability has not been independently confirmed."
+  },
+  {
+    "id": "org-authority-wbpcb",
+    "name": "West Bengal Pollution Control Board",
+    "description": "State pollution-control contact for environmental pollution enquiries. Ask the board to direct the enquiry to its appropriate regional office.",
+    "email": "net.wbpcb-wb@bangla.gov.in",
+    "address": "Paribesh Bhawan, 10A, Block LA, Sector III, Bidhannagar, Kolkata, West Bengal 700106",
+    "phone": "033-2335-9088",
+    "service_regions": [
+      "sodepur-barrackpore"
+    ],
+    "places": [
+      "Sodepur",
+      "Barrackpore",
+      "Khardah",
+      "Khardaha",
+      "Titagarh",
+      "Panihati",
+      "North 24 Parganas",
+      "West Bengal"
+    ],
+    "kind": "Pollution control",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "Official board contact directory",
+        "url": "https://www.wbpcb.gov.in/contact-us"
+      },
+      {
+        "title": "Board letter dated 19 January 2026",
+        "url": "https://www.wbpcb.gov.in/files/Mo-05-2026-05-51-42SKM_306i26011912580_0001.pdf"
+      }
+    ],
+    "contact_note": ""
+  },
+  {
+    "id": "org-authority-maraimalai",
+    "name": "Maraimalai Nagar Municipality",
+    "description": "Municipal services contact for the Maraimalai Nagar and Potheri area. Confirm the applicable municipal ward for the exact location.",
+    "email": "commr.maraimalainagar@tn.gov.in",
+    "address": "Adigalar Salai, Maraimalai Nagar, Chengalpattu, Tamil Nadu 603209",
+    "phone": "044-27452297",
+    "service_regions": [
+      "potheri"
+    ],
+    "places": [
+      "Potheri",
+      "Maraimalai Nagar",
+      "Kattankulathur",
+      "Chengalpattu",
+      "Chennai",
+      "Tamil Nadu"
+    ],
+    "kind": "Municipal services",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "Official municipal office address",
+        "url": "https://www.tnurbantree.tn.gov.in/maraimalainagar/whos-who/chairman/"
+      },
+      {
+        "title": "Chengalpattu district contact listing",
+        "url": "https://chengalpattu.nic.in/public-utility/maraimalai-nagar-municipality/"
+      }
+    ],
+    "contact_note": ""
+  },
+  {
+    "id": "org-authority-tnpcb-mmn",
+    "name": "TNPCB — Maraimalai Nagar District Office",
+    "description": "District environmental office for pollution enquiries in its published Chengalpattu service area. Confirm jurisdiction with the office.",
+    "email": "deemmn@tnpcb.gov.in",
+    "address": "Maraimalai Adigalar Street, next to Municipal Office, Maraimalai Nagar, Chengalpattu, Tamil Nadu 603209",
+    "phone": "044-27454422",
+    "service_regions": [
+      "potheri"
+    ],
+    "places": [
+      "Potheri",
+      "Maraimalai Nagar",
+      "Chengalpattu",
+      "Kattankulathur",
+      "Chennai",
+      "Tamil Nadu"
+    ],
+    "kind": "Pollution control",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "TNPCB official office address directory",
+        "url": "https://ocmms.tn.gov.in/OCMMS/SPCB_DOCUMENTS/ContactUsTNPCB.pdf"
+      }
+    ],
+    "contact_note": ""
+  },
+  {
+    "id": "org-authority-gba",
+    "name": "Greater Bengaluru Authority",
+    "description": "Public civic-services contact. Bengaluru is served by the Greater Bengaluru Authority and city corporations; confirm the current corporation and water-body custodian.",
+    "email": "comm@bbmp.gov.in",
+    "address": "Hudson Circle, N.R. Square, Bengaluru, Karnataka 560002",
+    "phone": "1533",
+    "service_regions": [
+      "bengaluru"
+    ],
+    "places": [
+      "Bengaluru",
+      "Bangalore",
+      "Karnataka"
+    ],
+    "kind": "Municipal services",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "Current Greater Bengaluru Authority portal",
+        "url": "https://bbmp.gov.in/"
+      }
+    ],
+    "contact_note": ""
+  },
+  {
+    "id": "org-authority-kspcb",
+    "name": "Karnataka State Pollution Control Board",
+    "description": "State pollution-control contact for Bengaluru environmental enquiries. Ask the board to identify the applicable regional office.",
+    "email": "memsecy@kspcb.gov.in",
+    "address": "Parisara Bhavan, 49, 4th and 5th Floor, Church Street, Bengaluru, Karnataka 560001",
+    "phone": "080-25589112",
+    "service_regions": [
+      "bengaluru"
+    ],
+    "places": [
+      "Bengaluru",
+      "Bangalore",
+      "Karnataka"
+    ],
+    "kind": "Pollution control",
+    "checked_at": "2026-10-04",
+    "sources": [
+      {
+        "title": "Bengaluru Urban official board directory",
+        "url": "https://bengaluruurban.nic.in/en/department/karnataka-state-pollution-control-board/"
+      }
+    ],
+    "contact_note": ""
+  }
+]

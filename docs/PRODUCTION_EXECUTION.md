@@ -58,3 +58,25 @@ Chrome-compatible SVG favicon uses the existing amber wave mark; deployed HTML
 links it and the live asset responds 200 with image/svg+xml. Page layout and
 styles are retained. Validation: 113 backend tests passed, two PostgreSQL tests
 skipped; 19 frontend tests and production build passed.
+
+## Authority contacts and customer sharing — 4 October 2026
+
+Added eight source-linked public offices covering Bengaluru, Sodepur–Barrackpore
+and Potheri. Directory search accepts locality and office names. Passport and
+map selection expose regional contact candidates separately from assigned
+responders. Each contact has address, email, telephone, citations and a checked
+date. Exact water-body ownership/ward jurisdiction and agency participation are
+not verified; Khardah explicitly retains its older-source warning. Directory
+seeding is idempotent and never creates cases or institutional user accounts.
+
+Instagram Story and WhatsApp Status PNG exports are 1080 × 1920; square remains
+1080 × 1080. Templates retain the AquaRelay mark, record status, source and
+review disclaimer. Users download/share manually. Removed public developer/API
+navigation and screen; application backend endpoints remain. Professional menu
+entries are limited to organisation users/admins. Original website layout retained.
+
+Validation: 115 backend tests passed, two PostgreSQL tests skipped; 23 frontend
+tests passed; production build passed. Two isolated browser scenarios passed
+(contact search/passport/menu and actual downloaded PNG dimensions). Windows
+browser runner was interrupted after successful scenarios because teardown hung.
+Saved share screenshots are synthetic QA examples, not real environmental reports.

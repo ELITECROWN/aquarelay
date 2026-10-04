@@ -4,6 +4,7 @@ import { Modal, useToast } from "../ui";
 import { date, errorText, label, Notice, useRecord } from "./workflowShared";
 import { aggregateReviewLabel } from "./shareLabels";
 import {selectedSocialHandles,type SocialAccount} from './socialAccounts';
+import {drawShareCard,type CardFormat} from './shareCard';
 
 type Water = {
   id: string;
@@ -33,30 +34,6 @@ export interface ShareModalProps {
   sourceAttribution?: string;
   recordKind?: "case" | "action";
 }
-function wrappedText(
-  context: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  width: number,
-  lineHeight: number,
-  maximumLines = 6,
-) {
-  const words = text.split(/\s+/);
-  let line = "",
-    count = 0;
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (context.measureText(next).width > width && line) {
-      context.fillText(line, x, y + count * lineHeight);
-      count++;
-      line = word;
-      if (count >= maximumLines - 1) break;
-    } else line = next;
-  }
-  context.fillText(line, x, y + count * lineHeight);
-  return y + (count + 1) * lineHeight;
-}
 export default function ShareModal({
   open,
   onClose,
@@ -69,7 +46,7 @@ export default function ShareModal({
     null,
   );
   const toast = useToast();
-  const [format, setFormat] = useState<"square" | "story">("square"),
+  const [format, setFormat] = useState<CardFormat>("instagram"),
     [caption, setCaption] = useState(""),
     [blob, setBlob] = useState<Blob>(),
     [error, setError] = useState("");
@@ -89,7 +66,7 @@ export default function ShareModal({
       ? sources.data.sources
           .slice(0, 2)
           .map(
-            (source) => `${source.attribution || source.name} (${source.id})`,
+            (source) => `${source.attribution || source.name}`,
           )
           .join("; ")
       : `AquaRelay public record ${caseRecord?.id || waterbody.id}`);
@@ -158,132 +135,9 @@ export default function ShareModal({
     if (!open || !canvasElement) return;
     setBlob(undefined);
     const drawing = canvasElement;
-    drawing.width = 1080;
-    drawing.height = format === "story" ? 1920 : 1080;
-    const context = drawing.getContext("2d");
-    if (!context) {
-      setError(
-        "This browser cannot generate PNG cards. Copy the caption and permalink instead.",
-      );
-      return;
-    }
-    const height = drawing.height,
-      inset = 82,
-      width = drawing.width - inset * 2;
-    context.fillStyle = "#F6F7F2";
-    context.fillRect(0, 0, 1080, height);
-    context.fillStyle = "#183B30";
-    context.fillRect(0, 0, 1080, 22);
-    context.font = "500 34px Arial, sans-serif";
-    context.fillText("AquaRelay", inset, 106);
-    if (synthetic) {
-      context.fillStyle = "#DCE9AC";
-      context.fillRect(inset, 146, width, 65);
-      context.fillStyle = "#183B30";
-      context.font = "bold 29px Arial, sans-serif";
-      context.fillText("SYNTHETIC DEMO · FICTIONAL RECORD", inset + 24, 190);
-    }
-    const headingY = synthetic ? 270 : 226;
-    context.fillStyle = "#183B30";
-    context.font =
-      format === "story"
-        ? "500 66px Arial, sans-serif"
-        : "500 54px Arial, sans-serif";
-    const afterHeading = wrappedText(
-      context,
-      waterbody.name,
-      inset,
-      headingY,
-      width,
-      format === "story" ? 79 : 64,
-      2,
-    );
-    context.fillStyle = "#DCE8ED";
-    const surfaceTop =
-      format === "story" ? afterHeading + 100 : afterHeading + 28;
-    const surfaceHeight = format === "story" ? 490 : 170;
-    context.fillRect(inset, surfaceTop, width, surfaceHeight);
-    context.strokeStyle = "#7D9EAA";
-    context.lineWidth = 3;
-    for (let row = 0; row < (format === "story" ? 8 : 3); row++) {
-      context.beginPath();
-      for (let x = 0; x <= width; x += 8) {
-        const y =
-          surfaceTop + 40 + row * 47 + Math.sin(x / 100 + row * 0.7) * 9;
-        if (x === 0) context.moveTo(inset + x, y);
-        else context.lineTo(inset + x, y);
-      }
-      context.stroke();
-    }
-    context.fillStyle = "#183B30";
-    context.font =
-      format === "story"
-        ? "500 37px Arial, sans-serif"
-        : "500 33px Arial, sans-serif";
-    const afterUpdate = wrappedText(
-      context,
-      update,
-      inset,
-      surfaceTop + surfaceHeight + 65,
-      width,
-      45,
-      format === "story" ? 4 : 2,
-    );
-    context.font = "500 26px Arial, sans-serif";
-    context.fillStyle = "#654922";
-    wrappedText(context, reviewLabel, inset, afterUpdate + 25, width, 35, 2);
-    if (caseRecord) {
-      context.fillStyle = "#183B30";
-      context.font = "26px Arial, sans-serif";
-      context.fillText(
-        `Case work: ${label(caseRecord.state)}`,
-        inset,
-        afterUpdate + 92,
-      );
-    }
-    const footer = height - 195;
-    context.fillStyle = "#5E6D65";
-    context.font = "22px Arial, sans-serif";
-    context.fillText(
-      timestamp
-        ? `Record: ${date(timestamp)} · Snapshot: ${date(snapshotAt)}`
-        : `Snapshot generated ${date(snapshotAt)}`,
-      inset,
-      footer,
-    );
-    context.font = "21px Arial, sans-serif";
-    wrappedText(
-      context,
-      `Source: ${attribution}`,
-      inset,
-      footer + 36,
-      width,
-      27,
-      2,
-    );
-    context.font = "21px Arial, sans-serif";
-    wrappedText(
-      context,
-      publicUrl
-        ? permalink
-        : `Local demo · public address not configured · ${path}`,
-      inset,
-      footer + 98,
-      width,
-      27,
-      2,
-    );
-    context.fillStyle = "#E4EBDF";
-    context.fillRect(0, height - 54, 1080, 54);
-    context.fillStyle = "#183B30";
-    context.font = "22px Arial, sans-serif";
-    context.fillText(
-      synthetic
-        ? "DEMO SNAPSHOT · No claim of water safety or ecological recovery"
-        : "Dated snapshot · Read the current source record for updates",
-      inset,
-      height - 19,
-    );
+    try {
+      drawShareCard(drawing,format,{name:waterbody.name,update,reviewLabel,status:caseRecord?(caseRecord.state==='closed'?'Resolved':label(caseRecord.state)):'Public water-body record',attribution,recordDate:timestamp?date(timestamp):'',snapshotDate:date(snapshotAt),url:publicUrl?new URL(permalink).host:'Local preview',synthetic});
+    } catch(err){setError(errorText(err));return;}
     try {
       // Fixed-size, locally drawn cards avoid waiting for the browser's idle
       // canvas encoder, which can stall after a long reporting session.
@@ -369,15 +223,16 @@ export default function ShareModal({
               Square · 1080 × 1080
             </button>
             <button
-              aria-pressed={format === "story"}
-              onClick={() => setFormat("story")}
+              aria-pressed={format === "instagram"}
+              onClick={() => setFormat("instagram")}
             >
-              Story · 1080 × 1920
+              Instagram Story · 1080 × 1920
             </button>
+            <button aria-pressed={format === "whatsapp"} onClick={() => setFormat("whatsapp")}>WhatsApp Status · 1080 × 1920</button>
           </div>
           <canvas
             ref={setCanvasElement}
-            className={`wf-share-preview ${format}`}
+            className={`wf-share-preview ${format === "square" ? "square" : "story"}`}
             aria-label={`${synthetic ? "Synthetic demo " : ""}${format} share card preview`}
           />
           <button
@@ -425,7 +280,7 @@ export default function ShareModal({
               demonstration; no public QR is generated.
             </Notice>
           )}
-          <div className="info-panel">
+          {(accounts.loading||!!accounts.error||approvedAccounts.length>0)&&<div className="info-panel">
             <h3>Optional organisation handles</h3>
             <p className="wf-muted">Profiles reviewed by a platform administrator against the linked source. Choose up to five; selected handles are appended to your caption.</p>
             {accounts.loading&&<p>Loading reviewed profiles…</p>}
@@ -435,7 +290,7 @@ export default function ShareModal({
               <label><input type="checkbox" checked={selectedAccounts.includes(account.id)} disabled={!selectedAccounts.includes(account.id)&&selectedAccounts.length>=5} onChange={event=>setSelectedAccounts(previous=>event.target.checked?[...previous,account.id]:previous.filter(id=>id!==account.id))}/> {account.organisation_name} · @{account.handle} ({account.platform})</label>
               <p className="fine-print"><a href={account.account_url} target="_blank" rel="noreferrer">Profile</a> · <a href={account.verification_source} target="_blank" rel="noreferrer">Verification source</a> · Reviewed {date(account.verified_at)}</p>
             </div>)}
-          </div>
+          </div>}
           <div className="wf-button-grid">
             <button
               className="wf-button secondary"

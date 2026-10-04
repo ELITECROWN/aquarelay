@@ -67,5 +67,6 @@ export interface Passport {
   relationships: Record<string, any>[];
   nearby: WaterBody[];
   organisations: Record<string, any>[];
+  authorities?: import("./features/AuthorityContacts").AuthorityContact[];
   changes: RecordedEvent[];
 }

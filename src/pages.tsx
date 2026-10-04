@@ -41,7 +41,6 @@ import {
   Mail,
   Bell,
   LogOut,
-  FileJson,
   Compass,
   Plug,
   ShieldAlert,
@@ -120,6 +119,7 @@ function MapView(props: {
 }
 import { workflowLabel } from "./labels";
 import ShareModal from "./features/ShareModal";
+import AuthorityContacts, {ContactDetails} from "./features/AuthorityContacts";
 
 
 
@@ -581,6 +581,7 @@ export function ExplorePage() {
                     Share record
                   </button>
                 </div>
+                {!!passport.data.authorities?.length&&<details><summary>Authorities & contacts ({passport.data.authorities.length})</summary><AuthorityContacts items={passport.data.authorities} compact/></details>}
               </div>
             </aside>
           )}
@@ -704,7 +705,7 @@ export function PassportPage() {
       <div className="passport-heading">
         <div>
           <div className="eyebrow">
-            {w.type.toUpperCase()} · {w.id}
+            {w.type.toUpperCase()} · WATER-BODY RECORD
             {w.synthetic ? " · SYNTHETIC DEMO" : ""}
           </div>
           <h1>{w.name}</h1>
@@ -761,6 +762,7 @@ export function PassportPage() {
         </div>
         <MapView items={[w]} selected={w.id} onSelect={() => {}} compact />
       </div>
+      <AuthorityContacts items={d.authorities || []}/>
       <div
         className="passport-tabs"
         role="tablist"
@@ -1446,7 +1448,6 @@ export function LandingPage() {
             <div className="footer-col">
               <h5>Legal & Policy</h5>
               <ul>
-                <li><Link to="/developers">Open Data API</Link></li>
                 <li><Link to="/settings">Privacy Policy</Link></li>
                 <li><Link to="/settings">Terms of Service</Link></li>
                 <li><Link to="/notifications">Case Updates</Link></li>
@@ -1769,9 +1770,10 @@ export function NotificationsPage() {
 }
 export function OrganisationsPage() {
   const { id } = useParams();
+  const [search,setSearch]=useState("");
   const query = useQuery({
-    queryKey: ["organisations", id],
-    queryFn: () => api<any>(`/organisations${id ? "/" + id : ""}`),
+    queryKey: ["organisations", id, search],
+    queryFn: () => api<any>(`/organisations${id ? "/" + id : "?q="+encodeURIComponent(search)}`),
   });
   const items =
     id && query.data
@@ -1782,9 +1784,11 @@ export function OrganisationsPage() {
       <PageHeader
         eyebrow="PEOPLE BEHIND THE RECORDS"
         title="The organisation directory"
-        description="Published roles, contributed datasets, and documented activities. Synthetic organisations are labelled individually."
+        description="Find public authority contacts by place or organisation, including office addresses, emails and official sources."
       />
       <QueryState loading={query.isPending} error={query.error} />
+      {!id&&<label className="wf-field">Search your place or organisation<input value={search} onChange={event=>setSearch(event.target.value)} maxLength={120} placeholder="Sodepur, Barrackpore, Potheri, Bengaluru…"/></label>}
+      {!query.isPending&&!query.error&&!items.length&&<p>No matching organisations. Try a nearby locality or region.</p>}
       <div className="organisation-grid">
         {items.map((o: any) => (
           <article className="organisation-card" key={o.id}>
@@ -1794,36 +1798,14 @@ export function OrganisationsPage() {
             <DemoLabel synthetic={o.synthetic} />
             <h2>{o.name}</h2>
             <p>{o.description}</p>
-            <dl>
-              <dt>Published role</dt>
-              <dd>
-                {o.role || o.kind || "See sourced responsibility records below"}
-              </dd>
-              <dt>Responsibility source</dt>
-              <dd>
-                {o.responsibility_source ? (
-                  <a
-                    className="text-link"
-                    href={`/api/v1/sources/${o.responsibility_source}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {o.responsibility_source}
-                    <ExternalLink size={14} />
-                  </a>
-                ) : (
-                  "Not supplied"
-                )}
-              </dd>
-              <dt>Account metadata</dt>
-              <dd>{o.verification || "No verification claim"}</dd>
-            </dl>
+            {o.kind&&<p className="fine-print">{o.kind}</p>}
+            <ContactDetails contact={o}/>
             {!id && (
               <Link className="text-link" to={`/organisations/${o.id}`}>
                 Organisation record <ArrowUpRight size={15} />
               </Link>
             )}
-            {(o.contact || o.email) && (
+            {!o.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.contact||"") && (
               <a className="text-link" href={`mailto:${o.contact || o.email}`}>
                 <Mail size={15} />
                 {o.contact || o.email}
@@ -1913,131 +1895,6 @@ export function OrganisationsPage() {
           )}
         </>
       )}
-    </div>
-  );
-}
-export function DevelopersPage() {
-  const [id, setId] = useState("wb-reedwater");
-  return (
-    <div className="page developer-page">
-      <PageHeader
-        eyebrow="INTEROPERABILITY, WITH ITS ORIGINS INTACT"
-        title="Open records. Clear contracts."
-        description="A versioned, privacy-filtered API and explicit adapters for environmental observations."
-      />
-      <div className="two-column">
-        <div>
-          <section className="info-panel">
-            <Badge>PUBLIC READ-ONLY API · v1</Badge>
-            <h2>Build on a shared water-body identity.</h2>
-            <p>
-              Water bodies, public cases, documented actions, and source
-              metadata are paginated. Private notes, reporter contact
-              information, credentials, and private originals are excluded.
-            </p>
-            <pre>
-              <code>{`GET /api/v1/waterbodies?page=1&page_size=20\nGET /api/v1/waterbodies/${id}\nGET /api/v1/cases\nGET /api/v1/actions\nGET /api/v1/sources`}</code>
-            </pre>
-            <a
-              className="button secondary"
-              href="/api/docs"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Interactive OpenAPI docs <ExternalLink size={16} />
-            </a>
-          </section>
-          <section className="info-panel" id="standards">
-            <h2>Supported standards, scoped honestly.</h2>
-            <p>
-              SensorThings API 1.1 subset: Things, Locations, Sensors,
-              ObservedProperties, Datastreams, FeaturesOfInterest, and
-              Observations. Citizen ownership/licensing metadata follows the
-              supported STAplus 1.0 extension fields.
-            </p>
-            <p>
-              FHIR R4 4.0.1 demonstration: one synthetic environmental
-              measurement in a Bundle with Location, Observation, and
-              Provenance. A local coding system is used; there are no patients
-              or clinical interpretations.
-            </p>
-            <p className="section-note">
-              Structural checks are reported separately from profile and
-              terminology validation. This implementation does not claim full
-              standards conformance.
-            </p>
-            <div className="button-row">
-              <a
-                className="button secondary"
-                href={`/api/v1/standards/${id}/fhir`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <FileJson size={16} />
-                FHIR example
-              </a>
-              <a
-                className="button secondary"
-                href={`/api/v1/standards/${id}/sensorthings`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                SensorThings example
-              </a>
-            </div>
-          </section>
-        </div>
-        <aside>
-          <section className="info-panel">
-            <h3>Embed a public passport</h3>
-            <label>
-              Permanent water-body ID
-              <input value={id} onChange={(e) => setId(e.target.value)} />
-            </label>
-            <pre>
-              <code>{`<iframe title="Water-body record"\n src="${window.location.origin}/api/v1/embed/${encodeURIComponent(id)}"\n width="360" height="240">\n</iframe>`}</code>
-            </pre>
-            <iframe
-              title="Public water-body card preview"
-              src={`/api/v1/embed/${encodeURIComponent(id)}`}
-              className="embed-preview"
-            />
-            <p className="fine-print">
-              Live record; synthetic label travels with the embed.
-            </p>
-          </section>
-          <section className="info-panel">
-            <h3>Assistance without the fiction</h3>
-            <Badge>RULES-BASED ASSISTANCE</Badge>
-            <p>
-              Mapping suggestions, related-case candidates, and changed
-              summaries use deterministic rules and stored records. No AI model
-              is configured. Manual workflows remain available.
-            </p>
-          </section>
-          <section className="info-panel">
-            <h3>Source & licence register</h3>
-            <p>
-              All demonstration geography, organisations, incidents,
-              measurements, and biodiversity records are synthetic fixtures
-              created for AquaRelay.
-            </p>
-            <p>
-              No generated photograph is represented as incident evidence. Icons
-              are Lucide (ISC); the system font requires no remote asset
-              requests.
-            </p>
-            <a
-              className="text-link"
-              href="https://maplibre.org/maplibre-gl-js/docs/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              MapLibre reference <ExternalLink size={14} />
-            </a>
-          </section>
-        </aside>
-      </div>
     </div>
   );
 }

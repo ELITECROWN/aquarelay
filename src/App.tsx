@@ -24,7 +24,6 @@ import {
   LoginPage,
   SettingsPage,
   FollowingPage,
-  DevelopersPage,
 } from "./pages";
 import ReportPage from "./features/ReportPage";
 import IncidentPage from "./features/IncidentPage";
@@ -204,7 +203,6 @@ export default function App() {
             <Route path="/account/recovery" element={<AccountRecovery />} />
             <Route path="/account/verify" element={<AccountRecovery />} />
             <Route path="/following" element={<FollowingPage />} />
-            <Route path="/developers" element={<DevelopersPage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/integrations/import" element={<ImportPage />} />
             <Route path="/integrations/:id" element={<IntegrationsPage />} />

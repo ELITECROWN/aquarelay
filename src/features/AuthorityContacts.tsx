@@ -1,0 +1,10 @@
+import {Link} from 'react-router-dom';
+import {Building2,ExternalLink,Mail,MapPin,Phone} from 'lucide-react';
+export interface AuthorityContact {id:string;name:string;description:string;kind?:string;address?:string;email?:string;phone?:string;places?:string[];checked_at?:string;contact_sources?:{title:string;url:string}[];contact_note?:string;match_kind?:string}
+export function ContactDetails({contact}:{contact:AuthorityContact}){
+ return <><dl>{contact.address&&<><dt>Office address</dt><dd><MapPin size={14}/> {contact.address}</dd></>}{contact.email&&<><dt>Email</dt><dd><a className="text-link" href={'mailto:'+contact.email}><Mail size={14}/> {contact.email}</a></dd></>}{contact.phone&&<><dt>Phone</dt><dd><a className="text-link" href={'tel:'+contact.phone.replace(/[^+0-9]/g,'')}><Phone size={14}/> {contact.phone}</a></dd></>}</dl>{contact.contact_note&&<p className="fine-print">{contact.contact_note}</p>}{contact.contact_sources?.map(source=><p key={source.url} className="fine-print"><a className="text-link" href={source.url} target="_blank" rel="noreferrer">{source.title} <ExternalLink size={13}/></a></p>)}{contact.checked_at&&<p className="fine-print">Source checked {contact.checked_at}. Confirm office details before visiting.</p>}</>;
+}
+export default function AuthorityContacts({items,compact=false}:{items:AuthorityContact[];compact?:boolean}){
+ if(!items.length)return null;
+ return <section className="authority-contacts" aria-label="Regional authority contacts"><h2 className="section-heading">Authorities & local contacts</h2><p className="section-note">Public offices serving this region. Confirm the exact ward and water-body responsibility with the office; these contacts have not automatically received your report.</p><div className={compact?'':'organisation-grid'}>{items.map(contact=><article className="organisation-card" key={contact.id}><Building2 size={22}/><h3>{contact.name}</h3><p>{contact.kind}</p><ContactDetails contact={contact}/><Link className="text-link" to={'/organisations/'+contact.id}>View organisation <ExternalLink size={14}/></Link></article>)}</div></section>;
+}

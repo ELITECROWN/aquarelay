@@ -20,6 +20,10 @@ def prepare_database():
     migrate(adopt_existing=os.getenv('ADOPT_EXISTING_SCHEMA','false').lower()=='true')
     from .bootstrap import from_environment
     from_environment()
+    from .authority_directory import seed_directory
+    from .db import SessionLocal
+    if os.getenv("DEMO_MODE","true").lower()=="false":
+        with SessionLocal() as db:seed_directory(db)
     paths=[os.getenv('REGISTRY_STARTER_PATH',''),*os.getenv('REGISTRY_STARTER_PATHS','').split(',')]
     paths=list(dict.fromkeys(path.strip() for path in paths if path.strip()))
     if paths:

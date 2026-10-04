@@ -242,6 +242,7 @@ def registry_map(q:str='',type:str='',db:Session=Depends(get_db)):
 
 @router.get("/waterbodies/{waterbody_id}")
 def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = Depends(get_db)):
+    from .authority_directory import regional_contacts
     wb=get_record(db,WaterBody,waterbody_id)
     cutoff=iso(as_of,end_of_day=True) if as_of else None
     since_time=iso(since) if since else (datetime.now(timezone.utc)-timedelta(days=30)).isoformat()
@@ -270,7 +271,7 @@ def passport(waterbody_id: str, as_of: str = "", since: str = "", db: Session = 
     org_ids={s.organisation_id for s in sources if s.organisation_id} | {c.organisation_id for c in cases if c.organisation_id}
     changes=[{"record_id":e.id,"title":e.title,"created_at":e.created_at,"href":f"/incidents/{e.case_id}" if e.case_id else f"/waterbodies/{wb.id}","description":e.description} for e in events if e.created_at>=since_time]
     case_items=[case_snapshot(db,c,cutoff) if cutoff else case_json(db,c) for c in cases]
-    return {"waterbody":waterbody_json(db,wb,cutoff),"events":[event_json(e) for e in events],"observations":[observation_json(o) for o in observations],"biodiversity":[{"id":b.id,"common_name":b.common_name,"scientific_name":b.scientific_name,"source_id":b.source_id,"observed_at":b.observed_at,"synthetic":b.synthetic,"location_notice":"Precise location withheld" if b.restricted else "Water-body level only"} for b in biodiversity],"cases":case_items,"actions":[action_json(a) for a in action_rows],"sources":[source_json(s) for s in sources],"relationships":[{k:getattr(r,k) for k in ("id","waterbody_id","target_type","target_id","kind","description","source_id","synthetic","created_at")} for r in relations],"nearby":sorted(nearby,key=lambda n:n["distance_m"]),"organisations":[organisation_json(db.get(Organisation,i)) for i in org_ids],"changes":changes,"summary_notice":"Rules-based summary cites stored records and does not assess water safety."}
+    return {"waterbody":waterbody_json(db,wb,cutoff),"events":[event_json(e) for e in events],"observations":[observation_json(o) for o in observations],"biodiversity":[{"id":b.id,"common_name":b.common_name,"scientific_name":b.scientific_name,"source_id":b.source_id,"observed_at":b.observed_at,"synthetic":b.synthetic,"location_notice":"Precise location withheld" if b.restricted else "Water-body level only"} for b in biodiversity],"cases":case_items,"actions":[action_json(a) for a in action_rows],"sources":[source_json(s) for s in sources],"relationships":[{k:getattr(r,k) for k in ("id","waterbody_id","target_type","target_id","kind","description","source_id","synthetic","created_at")} for r in relations],"nearby":sorted(nearby,key=lambda n:n["distance_m"]),"organisations":[organisation_json(db.get(Organisation,i)) for i in org_ids],"authorities":regional_contacts(db,wb),"changes":changes,"summary_notice":"Rules-based summary cites stored records and does not assess water safety."}
 
 @router.get("/cases")
 def cases(waterbody_id: str="", state: str="", page:int=Query(1,ge=1),page_size:int=Query(50,ge=1,le=100),db:Session=Depends(get_db)):
@@ -730,11 +731,15 @@ def put_preferences(body:PreferencesInput,db:Session=Depends(get_db),user:User=D
 
 def organisation_json(org):
     if not org: return None
-    return {"id":org.id,"name":org.name,"description":org.description,"contact":org.contact,"synthetic":org.synthetic,"verification":org.data.get("verification","No verification claim"),"responsibility_source":org.data.get("responsibility_source"),"created_at":org.created_at}
+    return {"id":org.id,"name":org.name,"description":org.description,"contact":org.contact,"synthetic":org.synthetic,"verification":org.data.get("verification","No verification claim"),"responsibility_source":org.data.get("responsibility_source"),"created_at":org.created_at,**{key:org.data.get(key) for key in ("address","email","phone","kind","service_regions","places","checked_at","contact_sources","contact_note","directory_contact")}}
 
 @router.get("/organisations")
-def organisations(db:Session=Depends(get_db)):
-    return {"items":[organisation_json(o) for o in db.scalars(select(Organisation).order_by(Organisation.name))]}
+def organisations(q:str=Query('',max_length=120),db:Session=Depends(get_db)):
+    items=[organisation_json(o) for o in db.scalars(select(Organisation).order_by(Organisation.name))]
+    if q:
+        needle=q.strip().casefold()
+        items=[o for o in items if needle in ' '.join(str(o.get(key) or '') for key in ('name','description','address','places')).casefold()]
+    return {'items':items,'total':len(items)}
 
 @router.get("/organisations/{organisation_id}")
 def organisation_profile(organisation_id:str,db:Session=Depends(get_db)):
