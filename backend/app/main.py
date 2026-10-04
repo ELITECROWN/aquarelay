@@ -15,6 +15,7 @@ from .core import router as core_router,DEMO_MODE
 from .assistance import router as assistance_router
 from .workspace import router as workspace_router
 from .push import router as push_router
+from .cleanup import router as cleanup_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -68,6 +69,7 @@ app.include_router(core_router,prefix="/api/v1",tags=["registry and workflow"])
 app.include_router(assistance_router,prefix="/api/v1",tags=["non-authoritative drafts"])
 app.include_router(workspace_router,prefix="/api/v1",tags=["professional contributions"])
 app.include_router(push_router,prefix='/api/v1',tags=['browser notifications'])
+app.include_router(cleanup_router,prefix='/api/v1',tags=['administrator cleanup'])
 try:
     from .integrations import router as integrations_router
     app.include_router(integrations_router,prefix="/api/v1",tags=["interoperability"])

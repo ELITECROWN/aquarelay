@@ -66,6 +66,7 @@ export default function WorkspacePage() {
         </Link>
       </WorkflowHeader>
       <div className="wf-workspace-tiles">
+        {user.role === 'admin' && <Link to="/admin/cleanup" className="wf-panel"><Database size={24} /><h3>Prototype data cleanup</h3><p>Preview and remove reports, uploads or citizen accounts.</p><ArrowRight size={18} /></Link>}
         <Link to="/integrations" className="wf-panel">
           <Database size={24} />
           <h3>Sources & integration health</h3>

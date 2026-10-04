@@ -1,11 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Waves, VolumeX, Volume2 } from "lucide-react";
-import { openSideMenuDrawer } from "./SideMenuDrawer";
 
 export default function PureFlowHeroVideo() {
   const [videoFailed, setVideoFailed] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -36,12 +32,6 @@ export default function PureFlowHeroVideo() {
     setMouseOffset({ x: x * 18, y: y * 14 });
   };
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
-    }
-  };
 
   return (
     <div
@@ -62,7 +52,7 @@ export default function PureFlowHeroVideo() {
             ref={videoRef}
             autoPlay
             loop
-            muted={isMuted}
+            muted
             playsInline
             onTimeUpdate={(e) => {
               if (e.currentTarget.currentTime >= 10.0) {
@@ -109,18 +99,6 @@ export default function PureFlowHeroVideo() {
         </div>
       </div>
 
-      {/* Subtle Video Control Pill */}
-      <div className="pureflow-video-ctrl">
-        <button
-          type="button"
-          onClick={toggleMute}
-          className="pureflow-mute-btn"
-          title={isMuted ? "Unmute video audio" : "Mute video audio"}
-        >
-          {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-          <span>{isMuted ? "Sound Off" : "Sound On"}</span>
-        </button>
-      </div>
     </div>
   );
 }
