@@ -348,8 +348,8 @@ export function ExplorePage() {
               <SlidersHorizontal size={18} />
             </button>
           </div>
-          {filters && (
-            <div className="filters">
+          <Modal open={filters} onClose={()=>setFilters(false)} title="Filter water bodies">
+            <div className="filters explore-filter-popup">
               <label>
                 Water-body type
                 <select value={type} onChange={(e) => setType(e.target.value)}>
@@ -422,8 +422,9 @@ export function ExplorePage() {
               >
                 Clear all filters
               </button>
+              <button className="button primary" onClick={()=>setFilters(false)}>Show results</button>
             </div>
-          )}
+          </Modal>
           <div className="results-heading">
             <span>{registry.data?.total ?? "…"} registered water bodies</span>
             <div className="view-toggle">

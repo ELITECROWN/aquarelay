@@ -1,4 +1,5 @@
 import ShareModal from "./ShareModal";
+import BasicObservationMap from './BasicObservationMap';
 import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -38,10 +39,10 @@ import {
 
 const ObservationMap=lazy(()=>import("./ObservationMap"));
 
-class ObservationMapBoundary extends Component<{children:ReactNode},{failed:boolean}> {
+class ObservationMapBoundary extends Component<{children:ReactNode;position:{latitude:number;longitude:number}},{failed:boolean}> {
   state={failed:false};
   static getDerivedStateFromError(){return {failed:true};}
-  render(){return this.state.failed?<Notice>Map could not be loaded. Select a water body and enter the observation coordinates below; the report form remains available.</Notice>:this.props.children;}
+  render(){return this.state.failed?<><Notice>The interactive map could not be loaded. A basic map shows the selected region; you can adjust the observation coordinates below.</Notice><BasicObservationMap position={this.props.position}/></>:this.props.children;}
 }
 
 type Water = {
@@ -367,6 +368,10 @@ export default function ReportPage() {
             Your community report and uploaded evidence are stored. Review status, organisation response and delivery receipts are recorded separately on the incident timeline.
           </p>
           <dl className="wf-record-details">
+            <dt>Water body and region</dt>
+            <dd>{selectedWater.data?.waterbody.name || submitted.values.waterbody_id} · {selectedWater.data?.waterbody.locality || 'Loading registered locality…'}</dd>
+            <dt>Reported position</dt>
+            <dd>{submitted.values.latitude.toFixed(6)}, {submitted.values.longitude.toFixed(6)}</dd>
             <dt>Report ID</dt>
             <dd>{submitted.reportId}</dd>
             <dt>Case ID</dt>
@@ -480,7 +485,7 @@ export default function ReportPage() {
                     )}
                   </select>
                 </label>
-                {water&&<ObservationMapBoundary><Suspense fallback={<Loading/>}><ObservationMap position={{latitude:values.latitude,longitude:values.longitude}} onChange={position=>setValues(previous=>({...previous,...position}))}/></Suspense></ObservationMapBoundary>}
+                {water&&<><p className="wf-selected-region"><MapPin size={16}/> {water.name} · {water.locality}</p><ObservationMapBoundary position={{latitude:values.latitude,longitude:values.longitude}}><Suspense fallback={<Loading/>}><ObservationMap position={{latitude:values.latitude,longitude:values.longitude}} onChange={position=>setValues(previous=>({...previous,...position}))}/></Suspense></ObservationMapBoundary></>}
                 {selectedWater.error&&<Notice error>{selectedWater.error}</Notice>}
                 <div className="wf-form-grid">
                   <label className="wf-field">

@@ -6,4 +6,6 @@ The form now requests 30 identity-only records with a 300 ms search debounce. Th
 
 Case-list loading is deferred until the evidence step. Route changes reset scroll to prevent arriving beneath the fixed navigation after visiting a scrolled page. Decorative water rendering is capped at 30 fps; both decorative canvases skip drawing in hidden tabs. Original styles, map positioning and the reporting workflow are retained.
 
+Explore filters open in a keyboard-accessible modal with existing fields, clear filters and show results actions. Reporting keeps the selected water body's name and locality visible. If the interactive map module or WebGL initialization fails, a basic OpenStreetMap embed and link show the saved coordinates; its panning does not change report coordinates. The submission receipt includes registered locality and the reported coordinates.
+
 Verification includes an identity lookup regression that rejects summary serialization, a browser test for failed lookup recovery and report search selection, existing demo journeys, frontend unit tests and a production build. Live deployment and real Gmail delivery require separate checks; mock transport tests do not establish inbox delivery.

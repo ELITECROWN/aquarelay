@@ -1,4 +1,8 @@
 /* Readability refinements: preserve the existing palette, geometry and layout. */
+.explore-filter-popup { display: grid; gap: 16px; padding: 0; max-height: none; overflow: visible; }
+.explore-filter-popup label { display: grid; gap: 8px; color: #1f2937; font-size: 13px; }
+.explore-filter-popup select, .explore-filter-popup input { width: 100%; min-height: 42px; border-radius: 8px; padding: 8px 10px; background: white; }
+.explore-filter-popup .date-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 :root { --muted: #4b5563 !important; --line: #a6adb7 !important; --glass-border: #a6adb7; }
 .pureflow-inner-main :is(p, small, dt, dd, label, .fine-print, .results-note, .page-description, .wf-muted) { color: #374151; }
 .pureflow-inner-main :is(.page-header p, .wf-header p, .fine-print, .results-note, .muted, .wf-muted) { color: #374151 !important; }

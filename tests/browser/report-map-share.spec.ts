@@ -34,7 +34,10 @@ test('map chunk failure preserves manual reporting fields',async({page})=>{
  await page.goto('/login');await page.getByLabel('Email',{exact:true}).fill('citizen@demo.aquarelay.local');await page.getByLabel('Password',{exact:true}).fill('DemoPass123!');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/explore/);
  await page.route('**/src/features/ObservationMap.tsx*',r=>r.abort('failed'));
  await page.goto('/report?waterbody=wb-willow');
- await expect(page.getByText(/Map could not be loaded. Select a water body/)).toBeVisible();
+ await page.route('https://www.openstreetmap.org/**',r=>r.abort());
+ await expect(page.getByText(/The interactive map could not be loaded/)).toBeVisible();
+ await expect(page.getByTitle('Selected observation region')).toBeVisible();
+ await expect(page.locator('.wf-selected-region')).toContainText('Willow');
  await page.getByLabel('Latitude',{exact:true}).fill('12.9702');await page.getByLabel('Longitude',{exact:true}).fill('77.5782');
  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.getByRole('heading',{name:'What did you observe?'})).toBeVisible();
 });

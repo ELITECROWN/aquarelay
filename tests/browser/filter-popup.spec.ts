@@ -1,0 +1,22 @@
+import {test,expect} from '@playwright/test';
+test('Explore filters open in accessible popup and persist on close',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
+ await page.goto('/explore');
+ await page.getByRole('button',{name:'Toggle filters'}).click();
+ const popup=page.getByRole('dialog',{name:'Filter water bodies',exact:true});
+ await expect(popup).toBeVisible();
+ await popup.getByLabel('Water-body type').selectOption('pond');
+ await popup.getByRole('button',{name:'Show results'}).click();
+ await expect(popup).toBeHidden();
+ await page.getByRole('button',{name:'Toggle filters'}).click();
+ await expect(popup.getByLabel('Water-body type')).toHaveValue('pond');
+ await popup.getByRole('button',{name:'Clear all filters'}).click();
+ await expect(popup.getByLabel('Water-body type')).toHaveValue('');
+ await page.keyboard.press('Escape');
+ await expect(popup).toBeHidden();
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'Toggle filters'}).click();
+ await expect(popup).toBeVisible();
+ expect(await popup.evaluate(el=>el.getBoundingClientRect().width)).toBeLessThanOrEqual(390);
+});
