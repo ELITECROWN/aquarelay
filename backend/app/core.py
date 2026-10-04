@@ -172,6 +172,7 @@ def waterbody_json(db, row, as_of=None):
     else:
         data_state = "No measurements recorded"
     result = {k: getattr(row, k) for k in ("id", "name", "aliases", "type", "locality", "latitude", "longitude", "geometry", "summary", "synthetic", "created_at")}
+    result["identity_details"]=row.data.get("identity_details")
     result.update(case_count=len(open_cases), total_case_count=len(cases), source_count=len(sources), latest_observed_at=max([o.observed_at for o in observations], default=None), case_state=states[0] if states else "No open cases — condition not assessed", data_state=data_state)
     return result
 

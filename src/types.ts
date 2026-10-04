@@ -11,6 +11,7 @@ export interface User {
 }
 export type MapWaterBody = Pick<WaterBody, 'id' | 'name' | 'type' | 'latitude' | 'longitude' | 'geometry' | 'case_count' | 'synthetic'>;
 export interface WaterBody {
+  identity_details?: {name_status:string; mapped_names?:string[]; coordinate_notice:string; description?:string; seasonal?:string; intermittent?:string; access?:string; operator?:string; nearby_place?:string; nearby_place_url?:string; nearby_place_distance_m?:number};
   id: string;
   name: string;
   aliases: string[];

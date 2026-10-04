@@ -1,3 +1,4 @@
+import IdentityDetails from "./features/IdentityDetails";
 import {
   Component,
   useEffect,
@@ -581,6 +582,7 @@ export function ExplorePage() {
                     Share record
                   </button>
                 </div>
+                <details><summary>Identity & location details</summary><IdentityDetails water={passport.data.waterbody}/></details>
                 {!!passport.data.authorities?.length&&<details><summary>Authorities & contacts ({passport.data.authorities.length})</summary><AuthorityContacts items={passport.data.authorities} compact/></details>}
               </div>
             </aside>
@@ -762,6 +764,7 @@ export function PassportPage() {
         </div>
         <MapView items={[w]} selected={w.id} onSelect={() => {}} compact />
       </div>
+      <IdentityDetails water={w}/>
       <AuthorityContacts items={d.authorities || []}/>
       <div
         className="passport-tabs"

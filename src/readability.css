@@ -1,0 +1,34 @@
+/* Readability refinements: preserve the existing palette, geometry and layout. */
+:root { --muted: #4b5563 !important; --line: #a6adb7 !important; --glass-border: #a6adb7; }
+.pureflow-inner-main :is(p, small, dt, dd, label, .fine-print, .results-note, .page-description, .wf-muted) { color: #374151; }
+.pureflow-inner-main :is(.page-header p, .wf-header p, .fine-print, .results-note, .muted, .wf-muted) { color: #374151 !important; }
+:is(.water-card, .organisation-card, .info-panel, .follow-card, .empty-state, .wf-panel, .wf-card, .wf-share-preview, .passport-stats, .map-sidebar, .map-intro, .notification-card) { border: 1px solid #a6adb7 !important; }
+:is(input:not([type=checkbox]):not([type=radio]), select, textarea) { border-color: #89939f !important; color: #1f2937 !important; }
+:is(input, textarea)::placeholder { color: #586474 !important; opacity: 1; }
+:is(.button, .wf-button, .wf-btn, .text-button, .passport-tabs button, .drawer-nav-item) { border-color: #a6adb7 !important; }
+:is(a, button, input, select, textarea, summary):focus-visible { outline: 3px solid #995500 !important; outline-offset: 3px !important; }
+.identity-details { border: 1px solid #a6adb7; border-radius: 12px; padding: 20px; margin: 22px 0; background: #fffdf7; }
+.identity-details dl { display: grid; grid-template-columns: minmax(140px, 1fr) 2fr; gap: 10px 20px; margin: 16px 0; }
+.identity-details dt { font-weight: 650; }
+.identity-details dd { margin: 0; overflow-wrap: anywhere; }
+.identity-details a { text-decoration: underline; text-underline-offset: 3px; }
+.map-sidebar .identity-details { padding: 12px; font-size: 13px; }
+.map-sidebar .identity-details dl { display: block; }
+.map-sidebar .identity-details dd { margin-bottom: 10px; }
+@media (prefers-reduced-motion: no-preference) {
+ :is(.water-card, .organisation-card, .info-panel, .wf-panel) { transition: border-color 180ms ease, box-shadow 180ms ease; }
+ :is(.water-card, .organisation-card):hover { border-color: #8a641e !important; box-shadow: 0 5px 18px #1f293713; }
+ :is(.button, .wf-button, .wf-btn) { transition: transform 160ms ease, box-shadow 160ms ease; }
+ :is(.button, .wf-button, .wf-btn):active:not(:disabled) { transform: translateY(1px); }
+ .identity-details { animation: identity-enter 220ms ease-out both; }
+ @keyframes identity-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+}
+@media (prefers-reduced-motion: reduce) {
+ *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 600px) { .identity-details dl { grid-template-columns: 1fr; gap: 5px; } .identity-details dd { margin-bottom: 10px; } }
+.pureflow-inner-main :is(h1, h2, h3, h4) { color: #1f2937 !important; }
+.pureflow-inner-main :is(.passport-subtitle, .water-card p, .organisation-card p, .wf-notice) { color: #374151 !important; }
+.preloader-brand-title { color: #fef3c7 !important; }
+.preloader-brand-sub { color: #d7e4da !important; }
+.pureflow-login-link { color: #ffffff !important; border: 1px solid #d6d3d1 !important; }

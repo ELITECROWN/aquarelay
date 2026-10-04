@@ -35,6 +35,10 @@ def prepare_database():
             payload=json.loads(Path(path).read_text(encoding='utf-8'))
             with SessionLocal() as db:import_registry(db,payload)
 
+    if os.getenv("DEMO_MODE","true").lower()=="false":
+        from .registry_details import enrich_bundled_registry
+        with SessionLocal() as db:enrich_bundled_registry(db)
+
 def main():
     validate_environment(os.environ)
     prepare_database()

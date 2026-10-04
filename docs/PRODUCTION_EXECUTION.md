@@ -80,3 +80,35 @@ tests passed; production build passed. Two isolated browser scenarios passed
 (contact search/passport/menu and actual downloaded PNG dimensions). Windows
 browser runner was interrupted after successful scenarios because teardown hung.
 Saved share screenshots are synthetic QA examples, not real environmental reports.
+
+## Identity enrichment and readability — 4 October 2026
+
+The imported registry contains 2,354 feature identities, not necessarily 2,354
+unique physical water bodies. Original accepted snapshots contain 2,101 missing
+names (including the separately reviewed Potheri Lake identity). No new local
+water-body names could be established from those tags. Existing mapped and
+reviewed names are preserved. Only importer-generated Unnamed placeholders are
+replaced with descriptive type + nearby locality + feature-centre coordinates.
+These labels are explicitly not official names. Mapped aliases and available
+seasonal/intermittent, access, operator and description tags are exposed in a
+source-linked Identity & location panel; absent depth, area, ownership and current
+water-quality details remain marked unrecorded.
+
+Locality context uses 1,468 named OpenStreetMap nodes. Their coordinates and
+public tags were retrieved from the official OSM nodes API after tags-only
+Overpass output and coordinate-query timeouts. The committed snapshot records
+endpoint, retrieval date, selection snapshot time, ODbL licence and attribution.
+Only place points within 2 km are matched; straight-line distance is approximate
+and does not establish a street address or jurisdiction. 2,059 original unnamed
+features have a nearby mapped place. The rest use region and coordinates.
+
+The one-time, versioned production enrichment preserves existing reviewed names,
+never creates observations/cases or authority assignments, and retains original
+OSM source tags. It runs after optional imports during production launch.
+
+UI refinements retain the current theme, layout and component shapes: darker
+headings and secondary text, stronger panel/form outlines, keyboard focus rings,
+subtle hover/press/reveal motion, and reduced-motion overrides. QA screenshots
+use synthetic fixtures. Validation: 117 backend tests passed, 2 PostgreSQL tests
+skipped; 23 frontend tests and production build passed. Browser validation covers
+identity information, border/text styles, mobile overflow and reduced motion.

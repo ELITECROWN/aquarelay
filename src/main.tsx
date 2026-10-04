@@ -8,6 +8,7 @@ import App from "./App";
 import { OfflineDraftSync } from "./features/offline";
 import "./styles.css";
 import "./lusion-theme.css";
+import "./readability.css";
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
 });

@@ -52,3 +52,15 @@ For a one-time hosted import, set REGISTRY_STARTER_PATHS to:
 registry/sodepur-barrackpore-osm-2026-10-04.json,registry/potheri-osm-2026-10-04.json
 Clear the variable after verified import. Repeated imports preserve existing IDs
 and do not overwrite user edits. Region searches use the locality field.
+
+## Descriptive labels and locality points — 4 October 2026
+
+`place-anchors-osm-2026-10-04.json` contains 1,468 public OSM locality nodes,
+retrieved from the official nodes API. These are place points, not water-body
+names or administrative polygons. Attribution: © OpenStreetMap contributors;
+licence ODbL-1.0. Source endpoint and selection snapshot date are retained.
+Production enrichment replaces only generated Unnamed labels; mapped/reviewed
+names remain unchanged. Descriptive labels include type, nearby mapped locality
+within 2 km (otherwise region), and coordinates. Local water-body names remain
+unknown until a source or field review establishes them. Available original OSM
+identity tags are exposed separately from current environmental observations.
