@@ -30,3 +30,15 @@ test('Explore retains a real basic map when WebGL is unavailable',async({page})=
  await expect(page.getByText('7 registered water bodies')).toBeVisible();
  expect(errors).toEqual([]);
 });
+test('blocked browser storage does not break a water-body passport',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+   Storage.prototype.getItem=function(){throw new DOMException('Storage blocked','SecurityError');};
+   Storage.prototype.setItem=function(){throw new DOMException('Storage blocked','SecurityError');};
+ });
+ await page.goto('/waterbodies/wb-reedwater');
+ await expect(page.getByRole('heading',{name:'Demo Reedwater Lake',exact:true})).toBeVisible();
+ await page.goto('/explore');
+ await expect(page.getByRole('heading',{name:'A little closer to your waters.'})).toBeVisible();
+ expect(errors).toEqual([]);
+});

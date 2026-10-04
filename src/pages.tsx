@@ -666,7 +666,8 @@ export function PassportPage() {
     [share, setShare] = useState(false);
   const { user } = useSession(),
     toast = useToast();
-  const since = localStorage.getItem(`visit:${id}`) || "";
+  let since = '';
+  try { since = localStorage.getItem(`visit:${id}`) || ''; } catch { /* Visit history is optional when browser storage is blocked. */ }
   useEffect(() => {
     setTab(requestedTab);
   }, [requestedTab, id]);
@@ -679,7 +680,7 @@ export function PassportPage() {
   });
   useEffect(
     () => () => {
-      if (id) localStorage.setItem(`visit:${id}`, new Date().toISOString());
+      try { if (id) localStorage.setItem(`visit:${id}`, new Date().toISOString()); } catch { /* Keep navigation working without local storage. */ }
     },
     [id],
   );
