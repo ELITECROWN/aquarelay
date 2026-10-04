@@ -214,12 +214,12 @@ export function ImageStreamHero({
   }, [scrollDriven, scrollProgress]);
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (!scrollDriven) return;
+    if (!scrollDriven || scrollProgress !== undefined) return;
     setWheelOffset((prev) => prev + e.deltaY * 0.001);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!scrollDriven) return;
+    if (!scrollDriven || scrollProgress !== undefined) return;
     isDraggingRef.current = true;
     lastPointerPos.current = { x: e.clientX, y: e.clientY };
     try {

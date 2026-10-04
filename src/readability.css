@@ -52,3 +52,12 @@
 .classic-intro-brand p { margin: 12px 0 0; color: #46554c !important; font-size: 14px; }
 @keyframes classic-logo-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .classic-intro, .classic-intro-brand { animation: none; transition: none; } }
+
+/* Full-viewport scroll gallery: no outer card frame. */
+.pureflow-gallery-corridor-section {padding-bottom:0;}
+.fullscreen-stream-track {position:relative;height:300vh;}
+.fullscreen-stream-stage {position:sticky;top:0;width:100%;height:100vh;height:100dvh;overflow:hidden;}
+.fullscreen-stream-stage .gallery-stream-card {width:100%;height:100%;min-height:0;border:0!important;border-radius:0;box-shadow:none;margin:0;cursor:auto;}
+.fullscreen-stream-hint {position:absolute;bottom:24px;left:0;right:0;text-align:center;color:#46554c;font-size:13px;pointer-events:none;}
+@media(prefers-reduced-motion:reduce){.fullscreen-stream-track{height:100vh}.fullscreen-stream-hint{display:none}}
+.pureflow-gallery-corridor-section {overflow:clip;border:0;}

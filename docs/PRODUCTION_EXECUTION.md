@@ -156,3 +156,15 @@ nonempty searches fit their results. Passport maps retain their existing fit.
 Validation: production build and 23 frontend unit tests passed. Browser checks
 passed for white intro progression/completion, reduced-motion skip, Bengaluru
 street-tile viewport and keyboard panning, plus reporting and sharing regression.
+
+### 4 October 2026 — Fullscreen scroll gallery
+
+The homepage image corridor now spans the viewport without an outer border,
+rounded frame or shadow. A 300vh track pins the 100dvh stage while page scrolling
+advances images; the following content remains reachable through normal scroll.
+External scroll control disables duplicate wheel/drag offsets. Reduced motion
+uses a static, single-viewport gallery. Existing photos and page content remain.
+
+Validation: production build, 23 unit tests and desktop/mobile browser checks
+passed. Browser checks cover edge-to-edge dimensions, absent outer borders and
+corner radius, pinned positioning and image-transform progression.

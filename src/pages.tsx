@@ -128,7 +128,7 @@ import AuthorityContacts, {ContactDetails} from "./features/AuthorityContacts";
 import LakeDeliveryBar from "./components/LakeDeliveryBar";
 import RiverCleanCinemaSection from "./components/RiverCleanCinemaSection";
 import PureFlowHeroVideo from "./components/PureFlowHeroVideo";
-import { ImageStreamHero } from "./components/ui/image-stream-hero";
+import { FullscreenImageStream } from "./components/ui/fullscreen-image-stream";
 
 const GALLERY_STREAM_IMAGES = [
   {
@@ -1290,17 +1290,8 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="gallery-stream-wrapper">
-            <ImageStreamHero
-              images={GALLERY_STREAM_IMAGES}
-              cards={10}
-              speed={16}
-              axis={50}
-              scrollDriven={true}
-              className="gallery-stream-card"
-            />
-          </div>
         </div>
+        <FullscreenImageStream images={GALLERY_STREAM_IMAGES}/>
       </section>
 
       {/* 6. PureFlow Impact & Accordion FAQ (matching right-middle of image) */}
