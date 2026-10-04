@@ -182,7 +182,7 @@ def config():
     return {"demo_mode": DEMO_MODE, "capabilities": {"database": "sqlite_local_fallback" if os.getenv("DATABASE_URL", "sqlite").startswith("sqlite") else "postgresql_postgis", "ai": "gemini_opt_in" if os.getenv('GEMINI_API_KEY') and os.getenv('GEMINI_MODEL') else "rules_based", "email": "account_email_configured" if configured() else "unavailable", "push": "available" if push_configured() else "unavailable", "storage":os.getenv('STORAGE_BACKEND','local'), "external_delivery": "configuration_required", "uploads": "jpeg_png_webp_mp4", "standards_validation": "structural_subset_checks", "map_style_url": os.getenv("MAP_STYLE_URL", ""), "public_url": os.getenv("PUBLIC_URL", "http://localhost:5173")}, "district": {"name": "Demo Reedwater District" if DEMO_MODE else "Bengaluru", "synthetic": DEMO_MODE, "center": [77.592,12.977]}}
 
 @router.get("/waterbodies")
-def waterbodies(q: str = "", type: str = "", state: str = "", availability: str = "", start: str = "", end: str = "", lat: float | None = Query(None,ge=-90,le=90), lon: float | None = Query(None,ge=-180,le=180), radius: float | None = Query(None,gt=0,le=500000), page: int = 1, page_size: int = 50, db: Session = Depends(get_db)):
+def waterbodies(q: str = "", type: str = "", state: str = "", availability: str = "", start: str = "", end: str = "", lat: float | None = Query(None,ge=-90,le=90), lon: float | None = Query(None,ge=-180,le=180), radius: float | None = Query(None,gt=0,le=500000), page: int = 1, page_size: int = 50, identity_only: bool = False, db: Session = Depends(get_db)):
     if page < 1 or page_size < 1 or page_size > 100:
         raise HTTPException(422, "Page must be positive; page size must be 1–100.")
     start_iso, end_iso = iso(start) if start else None, iso(end,end_of_day=True) if end else None
@@ -196,7 +196,8 @@ def waterbodies(q: str = "", type: str = "", state: str = "", availability: str 
     if not any((state,availability,start_iso,end_iso)) and lat is None and lon is None and radius is None:
         total=db.scalar(select(func.count()).select_from(statement.subquery()))
         rows=db.scalars(statement.offset((page-1)*page_size).limit(page_size))
-        return {"items":[waterbody_json(db,wb) for wb in rows],"total":total,"page":page,"page_size":page_size}
+        keys=('id','name','locality','type','latitude','longitude','synthetic')
+        return {"items":[{key:getattr(wb,key) for key in keys} if identity_only else waterbody_json(db,wb) for wb in rows],"total":total,"page":page,"page_size":page_size}
     if radius is not None and (lat is None or lon is None): raise HTTPException(422,"Radius search requires latitude and longitude.")
     if db.bind.dialect.name=="postgresql" and lat is not None and lon is not None and radius is not None:
         statement=statement.where(text("ST_DWithin(geog,ST_SetSRID(ST_MakePoint(:search_lon,:search_lat),4326)::geography,:search_radius)")).params(search_lon=lon,search_lat=lat,search_radius=radius)

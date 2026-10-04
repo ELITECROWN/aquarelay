@@ -105,6 +105,7 @@ export default function App() {
 
   useEffect(() => {
     document.title = `AquaRelay · ${location.pathname.split("/")[1] || "Every water body has a history"}`;
+    window.scrollTo({top:0,left:0,behavior:'instant'});
   }, [location.pathname]);
 
   useEffect(() => {

@@ -97,14 +97,17 @@ export default function ReportPage() {
   const { user, loading: sessionLoading } = useSession();
   const [params] = useSearchParams();
   const [waterSearch,setWaterSearch]=useState("");
+  const [lookupSearch,setLookupSearch]=useState("");
+  const [showWaterMatches,setShowWaterMatches]=useState(false);
+  useEffect(()=>{const timer=window.setTimeout(()=>setLookupSearch(waterSearch.trim()),300);return()=>window.clearTimeout(timer);},[waterSearch]);
   const [sharing,setSharing]=useState(false);
   const waters = useRecord<{ items: Water[] }>(
-    `/api/v1/waterbodies?page_size=100&q=${encodeURIComponent(waterSearch)}`,
+    `/api/v1/waterbodies?identity_only=true&page_size=30&q=${encodeURIComponent(lookupSearch)}`,
   );
-  const cases = useRecord<{ items: Case[] }>("/api/v1/cases?page_size=100");
   const [step, setStep] = useState(0),
     [values, setValues] = useState<ReportValues>(()=>({...initial,observation_type:types.some(([key])=>key===params.get("type")) ? params.get("type")! : ""})),
     [observedLocal, setObservedLocal] = useState(localNow);
+  const cases = useRecord<{ items: Case[] }>("/api/v1/cases?page_size=100",step>=2);
   const [media, setMedia] = useState<File[]>([]),
     [drafts, setDrafts] = useState<LocalDraft[]>([]),
     [current, setCurrent] = useState<LocalDraft>();
@@ -215,7 +218,7 @@ export default function ReportPage() {
     if (
       step === 0 &&
       (!values.waterbody_id ||
-        !observedLocal ||
+        !observedISO ||
         !Number.isFinite(values.latitude) ||
         !Number.isFinite(values.longitude) ||
         Math.abs(values.latitude) > 90 ||
@@ -436,14 +439,18 @@ export default function ReportPage() {
                 </p>
                 {waters.error && (
                   <Notice error>
-                    {waters.error} Existing local drafts can still be opened
-                    below.
+                    Water-body search is temporarily unavailable. Your saved drafts are still available.
+                    <button type="button" className="wf-button" onClick={waters.reload}>Retry water-body search</button>
                   </Notice>
                 )}
-                <label className="wf-field">Search water bodies by name or place<input type="search" maxLength={120} value={waterSearch} onChange={e=>setWaterSearch(e.target.value)} placeholder="Search Bengaluru, Sodepur, Potheri or a water-body name"/></label>
+                <label className="wf-field">Search water bodies by name or place<input type="search" maxLength={120} value={waterSearch} onFocus={()=>setShowWaterMatches(true)} onChange={e=>{setWaterSearch(e.target.value);setShowWaterMatches(true);}} placeholder="Search Bengaluru, Sodepur, Potheri or a water-body name" aria-controls="report-water-matches"/></label>
+                {showWaterMatches&&<div id="report-water-matches" className="wf-water-matches" aria-label="Matching water bodies">
+                  {waters.loading||lookupSearch!==waterSearch.trim()?<Loading/>:waters.error?null:results.length?results.map(item=><button type="button" key={item.id} aria-label={`Choose ${item.name} · ${item.locality}`} onClick={()=>{setValues(previous=>({...previous,waterbody_id:item.id,latitude:item.latitude,longitude:item.longitude,synthetic:item.synthetic,related_case_id:undefined}));setShowWaterMatches(false);setError("");}}><strong>{item.name}</strong><span>{item.locality}</span></button>):<p role="status">No matching water bodies. Try another name or locality.</p>}
+                </div>}
                 <label className="wf-field">
                   Water body
                   <select
+                    aria-label="Water body"
                     value={values.waterbody_id}
                     onChange={(event) => {
                       const selected = waterList.find(

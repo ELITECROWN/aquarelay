@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';
+test('report search shows selectable matches and recovers from failed lookup',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
+ await page.goto('/login');
+ await page.getByLabel('Email',{exact:true}).fill('citizen@demo.aquarelay.local');
+ await page.getByLabel('Password',{exact:true}).fill('DemoPass123!');
+ await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await expect(page).toHaveURL(/explore/);
+ let failing=true;
+ await page.route('**/api/v1/waterbodies?*',route=>failing?route.fulfill({status:502,body:'Unavailable'}):route.continue());
+ await page.goto('/report');
+ const heading=await page.getByRole('heading',{name:'Report an observation'}).boundingBox();
+ const navigation=await page.locator('.pureflow-capsule-nav').boundingBox();
+ expect(heading!.y).toBeGreaterThan(navigation!.y+navigation!.height);
+ await expect(page.getByRole('button',{name:'Retry water-body search'})).toBeVisible();
+ failing=false;
+ await page.getByRole('button',{name:'Retry water-body search'}).click();
+ await page.getByLabel('Search water bodies by name or place').fill('Willow');
+ await page.getByRole('button',{name:/Choose .*Willow/}).click();
+ await expect(page.getByLabel('Water body',{exact:true})).not.toHaveValue('');
+ await expect(page.getByLabel('Latitude',{exact:true})).not.toHaveValue('0');
+ await page.getByLabel('Search water bodies by name or place').fill('no-such-waterbody-xyz');
+ await expect(page.getByText('No matching water bodies. Try another name or locality.')).toBeVisible();
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+});

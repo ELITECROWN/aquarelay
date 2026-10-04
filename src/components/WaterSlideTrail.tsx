@@ -139,6 +139,11 @@ export default function WaterSlideTrail() {
     // Render loop for sliding water droplets
     let animId: number;
     const render = () => {
+      if (document.hidden || !droplets.length) {
+        ctx.clearRect(0, 0, width, height);
+        animId = requestAnimationFrame(render);
+        return;
+      }
       ctx.clearRect(0, 0, width, height);
 
       for (let i = droplets.length - 1; i >= 0; i--) {

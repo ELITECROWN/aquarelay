@@ -146,7 +146,7 @@ test("public map/list selection, history, sources and responsive navigation", as
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   const canvas = page.locator(".maplibregl-canvas");
   const initial = await canvas.screenshot();
-  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
   await page.waitForTimeout(550);
   expect(await canvas.screenshot()).not.toEqual(initial);
   await page

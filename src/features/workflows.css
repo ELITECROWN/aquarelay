@@ -5,6 +5,12 @@
   color: #233b32;
   min-width: 0;
 }
+.wf-water-matches { max-height: 280px; overflow-y: auto; border: 1px solid #a6adb7; border-radius: 12px; background: white; margin: -6px 0 20px; }
+.wf-water-matches:empty { display: none; }
+.wf-water-matches button { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 12px 16px; text-align: left; border: 0; border-bottom: 1px solid #e7e5e4; background: white; color: #1f2937; cursor: pointer; }
+.wf-water-matches button:hover, .wf-water-matches button:focus-visible { background: #fff7df; }
+.wf-water-matches span { font-size: 12px; color: #4b5563; }
+.wf-water-matches p { padding: 12px 16px; }
 .wf-page * {
   box-sizing: border-box;
 }

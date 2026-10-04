@@ -209,8 +209,14 @@ export default function ThreeDWaterScene({
     // 7. Render Loop
     let lastTime = performance.now();
     let animId: number;
+    let lastRendered = 0;
 
     const animate = (currentTime: number) => {
+      if (document.hidden || currentTime - lastRendered < 1000 / 30) {
+        animId = requestAnimationFrame(animate);
+        return;
+      }
+      lastRendered = currentTime;
       const now = currentTime || performance.now();
       const delta = Math.min((now - lastTime) * 0.001, 0.1);
       lastTime = now;
