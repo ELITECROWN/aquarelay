@@ -5,7 +5,7 @@ test('report from selected water outside first page, pick map position and share
  await page.route('https://tile.openstreetmap.org/**',r=>r.fulfill({contentType:'image/png',body:blankTile}));
  await page.goto('/login');await page.getByLabel('Email',{exact:true}).fill('citizen@demo.aquarelay.local');await page.getByLabel('Password',{exact:true}).fill('DemoPass123!');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/explore/);
  await page.route('**/api/v1/waterbodies?page_size=100*',r=>r.fulfill({json:{items:[],total:0}}));
- await page.goto('/explore');await page.getByRole('button',{name:/Demo Willow Pond.*on map/}).click();await page.getByRole('link',{name:'Report here',exact:true}).click();
+ await page.goto('/explore');await page.getByRole('button',{name:'Fit map to results',exact:true}).click();await page.getByRole('button',{name:/Demo Willow Pond.*on map/}).click();await page.getByRole('link',{name:'Report here',exact:true}).click();
  await expect(page.getByRole('combobox',{name:'Water body',exact:true})).toHaveValue('wb-willow');
  const latitude=page.getByLabel('Latitude',{exact:true});await expect(latitude).toHaveValue('12.97');
  const canvas=page.getByLabel('Choose observation location').locator('canvas');await expect(canvas).toBeVisible();await canvas.focus();await canvas.press('ArrowRight');

@@ -141,3 +141,18 @@ empty first-page list, changed map coordinates in the actual POST, successful
 submission and both portrait downloads. A separate map-chunk failure scenario
 verified manual entry and wizard continuation. Windows runner teardown requires
 interruption after scenario results; screenshots use synthetic QA fixtures.
+
+### 4 October 2026 — Classic intro and Bengaluru default view
+
+Removed the floating custom cursor. The opening animation now uses a white
+background, existing wave logo and pale 0–100 numerals. These are decorative
+intro progress, not a claim that remote data has loaded. Reduced-motion visitors
+skip it and the completed intro is remembered for the tab session.
+
+Explore opens at Bengaluru city scale without fitting the national registry.
+Panning, zooming, location selection and searching other areas remain available;
+nonempty searches fit their results. Passport maps retain their existing fit.
+
+Validation: production build and 23 frontend unit tests passed. Browser checks
+passed for white intro progression/completion, reduced-motion skip, Bengaluru
+street-tile viewport and keyboard panning, plus reporting and sharing regression.

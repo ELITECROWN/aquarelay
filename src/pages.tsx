@@ -103,6 +103,7 @@ function MapView(props: {
   selected?: string;
   onSelect: (id: string) => void;
   compact?: boolean;
+  defaultToBengaluru?: boolean;
 }) {
   return (
     <MapBoundary>
@@ -471,7 +472,7 @@ export function ExplorePage() {
           </div>
         </section>
         <section className={`map-region ${mode === "list" ? "list-mode" : ""}`}>
-          {fullMap && mode==='map' ? <><QueryState loading={mapRegistry.isPending} error={mapRegistry.error as Error|null}/>{mapRegistry.data && <MapView items={mapRegistry.data.items} selected={selected} onSelect={setSelected}/>} {mapRegistry.data?.truncated && <p className="fine-print">Map limited to 5,000 matches. Search to narrow the results.</p>}</> : <MapView items={items} selected={selected} onSelect={setSelected} />}
+          {fullMap && mode==='map' ? <><QueryState loading={mapRegistry.isPending} error={mapRegistry.error as Error|null}/>{mapRegistry.data && <MapView items={mapRegistry.data.items} selected={selected} onSelect={setSelected} defaultToBengaluru={!search.trim()}/>} {mapRegistry.data?.truncated && <p className="fine-print">Map limited to 5,000 matches. Search to narrow the results.</p>}</> : <MapView items={items} selected={selected} onSelect={setSelected} defaultToBengaluru={!search.trim()} />}
           {!selected && (
             <div className="map-intro">
               <span className="small-icon">

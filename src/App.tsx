@@ -36,7 +36,6 @@ import DispatchDetailsPage from "./features/DispatchDetailsPage";
 import ThreeDWaterScene from "./components/ThreeDWaterScene";
 import WaterSlideTrail from "./components/WaterSlideTrail";
 import SideMenuDrawer from "./components/SideMenuDrawer";
-import LusionCursor from "./components/LusionCursor";
 import Error404Page from "./components/Error404Page";
 import BefreakyPreloader from "./components/BefreakyPreloader";
 import PureFlowNavbar from "./components/PureFlowNavbar";
@@ -178,7 +177,6 @@ export default function App() {
   return (
     <div className="pureflow-app-root">
       <BefreakyPreloader />
-      <LusionCursor />
       <ThreeDWaterScene />
       <WaterSlideTrail />
       <SideMenuDrawer />

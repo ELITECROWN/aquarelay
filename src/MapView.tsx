@@ -20,11 +20,13 @@ export default function MapView({
   selected,
   onSelect,
   compact = false,
+  defaultToBengaluru = false,
 }: {
   items: WaterBody[];
   selected?: string;
   onSelect: (id: string) => void;
   compact?: boolean;
+  defaultToBengaluru?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<Map | null>(null),
@@ -35,7 +37,7 @@ export default function MapView({
     [locationMessage, setLocationMessage] = useState("");
   const current = useRef(items);
   const locationMarker=useRef<Marker|null>(null);
-  const autoFit=useRef(true);
+  const autoFit=useRef(!defaultToBengaluru);
   current.current = items;
   const configuredStyle = import.meta.env.VITE_MAP_STYLE_URL;
   const demoContext =
@@ -224,6 +226,7 @@ export default function MapView({
     });
     if(autoFit.current)fit();
   }, [items, ready]);
+  useEffect(()=>{if(!ready||!map.current)return;autoFit.current=!defaultToBengaluru;if(defaultToBengaluru)map.current.jumpTo({center:[77.5946,12.9716],zoom:11.6});else fit();},[defaultToBengaluru,ready]);
   useEffect(() => {
     const water = items.find((w) => w.id === selected);
     if (water && ready)
