@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import select,or_
 from sqlalchemy.orm import Session
 from .auth import require_user, require_manager
+from .admin_policy import platform_admin
 from .db import get_db
 from .models import User, Membership, WaterBody, Source, Organisation, Biodiversity, Relationship, Evidence, Case, Report, EvidenceRequest, Audit, uid, utcnow
 from .core import get_record, iso, emit_event, passport, organisation_case, evidence_json
@@ -33,7 +34,7 @@ def evidence_checklist(case_id:str,db:Session=Depends(get_db),user=Depends(requi
     return {'suggestions':suggestions,'open_requests':[{'id':r.id,'description':r.description} for r in db.scalars(select(EvidenceRequest).where(EvidenceRequest.case_id==case.id,EvidenceRequest.state=='open'))],'requires_review':True,'assistance':'Workflow checklist based on stored records; no sampling advice or causal diagnosis.'}
 
 def require_admin(user=Depends(require_user)):
-    if user.role != "admin":
+    if not platform_admin(user):
         raise HTTPException(403, "Platform administrator permission is required.")
     return user
 

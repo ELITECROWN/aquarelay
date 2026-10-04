@@ -7,7 +7,30 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) headers.set("X-CSRF-Token", csrf);
-  const response = await fetch(path.startsWith("/api") ? path : `/api/v1${path}`, { ...options, headers, credentials: "include" });
+  const read = method === 'GET' || method === 'HEAD';
+  let response: Response | undefined;
+  for (let attempt = 0; attempt < (read ? 3 : 1); attempt++) {
+    const controller = new AbortController();
+    const abort = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener('abort', abort, {once:true});
+    if (options.signal?.aborted) abort();
+    const timer = setTimeout(() => controller.abort(), read ? 25000 : 120000);
+    try {
+      response = await fetch(path.startsWith("/api") ? path : `/api/v1${path}`, { ...options, headers, credentials: "include", signal: controller.signal });
+      if (!read || ![502,503,504].includes(response.status) || attempt === 2) break;
+    } catch (error) {
+      if (options.signal?.aborted || !read || attempt === 2) {
+        if (controller.signal.aborted && !options.signal?.aborted) throw new Error('Connection timed out. Please try again; the server may be starting.');
+        throw error;
+      }
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener('abort', abort);
+    }
+    await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 1000 : 3000));
+    if (options.signal?.aborted) throw options.signal.reason;
+  }
+  if (!response) throw new Error('Unable to connect. Please try again.');
   if (!response.ok) {
     let message = `Request failed (${response.status}). Please retry.`;
     try {

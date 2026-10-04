@@ -38,6 +38,26 @@ def test_otp_locks_after_five_guesses(client,monkeypatch):
     assert client.post('/api/v1/auth/verify-login-code',json={'email':'real@example.org','code':code},headers=headers).status_code==422
     assert client.get('/api/v1/auth/session').json()['user'] is None
 
+def test_owner_receives_admin_access_only_after_otp(client,monkeypatch):
+    setup_sender(monkeypatch)
+    monkeypatch.setenv('DEMO_MODE','false')
+    csrf=client.get('/api/v1/auth/session').json()['csrf_token']
+    headers={'X-CSRF-Token':csrf}
+    email='dibyendukoley50@gmail.com'
+    created=client.post('/api/v1/auth/register',json={'email':email,'password':'GoodPass123!','name':'Owner','username':'verified_owner'},headers=headers)
+    assert created.status_code==201,created.text
+    assert client.get('/api/v1/admin/cleanup/storage-status').status_code==401
+    from app.db import SessionLocal
+    from app.models import Job,User
+    with SessionLocal() as db:
+        assert db.scalar(select(User).where(User.email==email)).role=='citizen'
+        job=db.scalar(select(Job).where(Job.data['sensitive'].as_boolean()==True))
+        code=re.search(r'\b\d{6}\b',job.data['message']).group()
+    verified=client.post('/api/v1/auth/verify-login-code',json={'email':email,'code':code},headers=headers)
+    assert verified.status_code==200,verified.text
+    assert verified.json()['user']['role']=='admin'
+    assert client.get('/api/v1/admin/cleanup/storage-status').status_code==200
+
 def test_required_otp_does_not_fall_back_when_sender_is_unavailable(client,monkeypatch):
     monkeypatch.setenv('EMAIL_OTP_REQUIRED','true')
     headers={'X-CSRF-Token':client.get('/api/v1/auth/session').json()['csrf_token']}

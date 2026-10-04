@@ -21,13 +21,12 @@ them and can be used once. Changed records require a fresh preview. Existing
 background work must finish before cleanup. File deletion uses the durable
 outbox and never requires putting storage credentials in the browser.
 
-If you have no administrator account, set these server environment variables
-in Render and redeploy:
+Production administration is reserved for `dibyendukoley50@gmail.com`.
+Register or sign in with that address and complete the email OTP verification.
+Only successful verification grants the owner the administrator role. Other
+accounts are denied by every platform administration endpoint, even if an older
+database entry gives them an administrator role. Local demonstration mode keeps
+its separate test administrators; keep `DEMO_MODE=false` on Render.
 
-- `BOOTSTRAP_ADMIN_EMAIL`: a separate email that is not already registered
-- `BOOTSTRAP_ADMIN_NAME`: your display name
-- `BOOTSTRAP_ADMIN_PASSWORD`: a new password of at least 14 characters
-
-After the administrator is created, remove the bootstrap variables. Sign in
-with that account. Existing citizen accounts are deliberately not automatically
-promoted. Never share the password or provider keys in chat.
+After deploying this policy, sign out and sign in again with the owner address
+to verify ownership and receive the admin links. No bootstrap password is needed.

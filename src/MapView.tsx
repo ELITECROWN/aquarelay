@@ -14,6 +14,7 @@ import { LocateFixed, Maximize2, Layers, Info } from "lucide-react";
 import type { MapWaterBody as WaterBody } from "./types";
 setWorkerUrl(workerUrl);
 import {realMap} from "./mapStyle";
+import BasicObservationMap from './features/BasicObservationMap';
 
 export default function MapView({
   items,
@@ -33,6 +34,7 @@ export default function MapView({
     select = useRef(onSelect);
   select.current = onSelect;
   const [ready, setReady] = useState(false),
+    [unsupported, setUnsupported] = useState(false),
     [error, setError] = useState(""),
     [locationMessage, setLocationMessage] = useState("");
   const current = useRef(items);
@@ -181,6 +183,7 @@ export default function MapView({
         setReady(false);
       };
     } catch {
+      setUnsupported(true);
       setError(
         "Interactive map unavailable on this device. Use the results list.",
       );
@@ -333,6 +336,10 @@ export default function MapView({
         ),
       { timeout: 10000, enableHighAccuracy:true, maximumAge:30000 },
     );
+  }
+  if (unsupported) {
+    const water = items.find(w => w.id === selected);
+    return <div className="map-view"><BasicObservationMap position={{latitude:water?.latitude ?? 12.9716, longitude:water?.longitude ?? 77.5946}} /><p role="status">Use the results list to select a water body. A basic map is shown on this device.</p></div>;
   }
   return (
     <div className={`map-view ${compact ? "map-compact" : ""}`}>

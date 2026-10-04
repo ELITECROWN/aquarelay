@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .db import get_db
 from .models import LoginSession, Membership, User, Job, Audit, uid, utcnow
+from .admin_policy import owner_verified, platform_admin
 
 router = APIRouter()
 hasher = PasswordHasher()
@@ -100,7 +101,7 @@ def public_user(user, csrf):
         "id": user.id,
         "name": user.name,
         "email": user.email,
-        "role": user.role,
+        "role": user.role if user.role != "admin" or platform_admin(user) else "citizen",
         "organisation_id": user.organisation_id,
         "username": username,
         "age": age,
@@ -218,6 +219,9 @@ def verify_login_code(body:LoginCode,request:Request,response:Response,db:Sessio
         user.data={**user.data,'login_otp':{**record,'attempts':record.get('attempts',0)+1}};db.commit()
         raise HTTPException(422,'Incorrect verification code. Please check your email.')
     user.data={**{k:v for k,v in user.data.items() if k!='login_otp'},'email_verified_at':utcnow()}
+    # Typing the owner address is insufficient: promotion follows successful OTP proof.
+    if owner_verified(user):
+        user.role = 'admin'
     if 'email' not in user.preferences:user.preferences={**user.preferences,'email':True}
     queue_signin_alert(db,user)
     db.delete(row)

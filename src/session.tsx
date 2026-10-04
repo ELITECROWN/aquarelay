@@ -41,6 +41,7 @@ const SessionContext = createContext<SessionContextType>({
 export function SessionProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient();
   const identity = useRef<string | null>(null);
+  const pendingSession = useRef<Promise<{user: User | null; csrf_token: string}> | null>(null);
   const [user, setUserState] = useState<User | null>(getStoredUser);
   const [loading, setLoading] = useState(true);
 
@@ -65,9 +66,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   async function refresh() {
     try {
-      const data = await api<{ user: User | null; csrf_token: string }>(
-        "/auth/session",
-      );
+      // Concurrent startup effects must share one cookie/CSRF handshake.
+      if (!pendingSession.current) pendingSession.current = api<{user: User | null; csrf_token: string}>("/auth/session").finally(() => { pendingSession.current = null; });
+      const data = await pendingSession.current;
       if (data?.csrf_token) {
         setCsrf(data.csrf_token);
       }
@@ -95,6 +96,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refresh();
+    const reconnect = () => { void refresh(); };
+    window.addEventListener('online', reconnect);
+    return () => window.removeEventListener('online', reconnect);
   }, []);
 
   return (

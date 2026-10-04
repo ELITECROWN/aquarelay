@@ -1,5 +1,10 @@
 /* Only public application assets are cached. API responses and evidence never enter this cache. */
-const CACHE = "aquarelay-shell-v3";
+const CACHE = "aquarelay-shell-v4";
+function validAsset(response, url) {
+  const type = response.headers.get('content-type') || '';
+  return response.ok && (/\.css$/.test(new URL(url).pathname)
+    ? type.includes('text/css') : /javascript|ecmascript/.test(type));
+}
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
@@ -24,7 +29,11 @@ self.addEventListener("install", (event) => {
         throw new Error("Invalid application entry assets");
       // The first page loads before this worker controls it. Cache its entry
       // scripts/styles during installation rather than relying on HTTP cache.
-      await cache.addAll(assets);
+      await Promise.all(assets.map(async url => {
+        const response = await fetch(url);
+        if (!validAsset(response, url)) throw new Error('Application asset unavailable');
+        await cache.put(url, response);
+      }));
       await cache.put("/", shell);
       await self.skipWaiting();
     })(),
@@ -81,9 +90,9 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         const cache = await caches.open(CACHE);
         const cached = await cache.match(event.request);
-        if (cached) return cached;
+        if (cached && validAsset(cached, url.href)) return cached;
         const response = await fetch(event.request);
-        if (response.ok) {
+        if (validAsset(response, url.href)) {
           // Keep the write within the fetch event's response lifetime.
           try {
             await cache.put(event.request, response.clone());
