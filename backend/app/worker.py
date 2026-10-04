@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from sqlalchemy import or_, select,update
 from .db import SessionLocal
-from .models import Event, Job, Notification, Subscription, User, WaterBody, uid, utcnow
+from .models import Event, Job, Notification, Subscription, User, WaterBody, Report, uid, utcnow
 
 def notification_time(preferences, now):
     local=now.astimezone(ZoneInfo(preferences.get("timezone","Asia/Kolkata")))
@@ -31,6 +31,20 @@ def deliver_notifications(db,job):
     event=db.get(Event,job.data["event_id"])
     if not event: return
     wb=db.get(WaterBody,event.waterbody_id)
+    # Reporter receipts and case checkpoints do not require following the whole lake.
+    from .mail import configured
+    tracking_users=set()
+    if configured() and event.case_id and (event.kind=='report' or event.data.get('state')):
+        reports=list(db.scalars(select(Report).where(Report.case_id==event.case_id)))
+        if event.kind=='report':reports=[r for r in reports if r.id==event.data.get('report_id')]
+        for user_id in {r.user_id for r in reports if r.created_at<=event.created_at}:
+            reporter=db.get(User,user_id)
+            if not reporter or not reporter.data.get('email_verified_at') or reporter.preferences.get('email') is False or reporter.preferences.get('digest')=='off':continue
+            tracking_users.add(user_id)
+            key='report_tracking:'+event.id+':'+user_id
+            if db.scalar(select(Job.id).where(Job.dedup_key==key)):continue
+            state=event.data.get('state','New community report').replace('_',' ').title()
+            db.add(Job(id=uid('job'),kind='report_tracking_email',dedup_key=key,data={'user_id':reporter.id,'to':reporter.email,'subject':('Report received' if event.kind=='report' else 'Tracking checkpoint reached')+' · '+wb.name,'message':f'Water body: {wb.name}\nCase: {event.case_id}\nCheckpoint: {state}\nRecorded: {event.created_at}\n{event.description}\nThis update records workflow progress; it does not establish water safety or cause.','link':os.environ['PUBLIC_URL'].rstrip('/')+'/incidents/'+event.case_id}))
     users={}
     for sub in db.scalars(select(Subscription)):
         if sub.created_at>event.created_at: continue
@@ -54,7 +68,7 @@ def deliver_notifications(db,job):
         else:
             notice=Notification(id=uid("notification"),user_id=user.id,event_id=event.id,waterbody_id=wb.id,case_id=event.case_id,title=f"Daily updates · {wb.name}" if prefs.get("digest")=="daily" else event.title,description=event.description,available_at=available_at,data={"event_ids":[event.id],"digest_day":available_at[:10] if prefs.get("digest")=="daily" else None})
             db.add(notice);db.flush()
-            if prefs.get('email') and user.data.get('email_verified_at'):
+            if prefs.get('email') and user.data.get('email_verified_at') and user.id not in tracking_users:
                 db.add(Job(id=uid('job'),kind='notification_email',dedup_key='notification_email:'+notice.id,available_at=available_at,data={'notification_id':notice.id}))
             if prefs.get('push') and user.data.get('push_subscriptions'):
                 db.add(Job(id=uid('job'),kind='notification_push',dedup_key='notification_push:'+notice.id,available_at=available_at,data={'notification_id':notice.id}))
@@ -89,7 +103,16 @@ def process_jobs(db,limit=50):
                 storage.delete(job.data["evidence_id"])
             elif job.kind=='email':
                 from .mail import deliver
-                deliver(job)
+                current_code=True
+                if job.data.get('sensitive'):
+                    recipient=db.get(User,job.data['user_id'])
+                    current_code=bool(recipient and recipient.data.get('login_otp',{}).get('job_id')==job.id)
+                if current_code and (not job.data.get('expires_at') or job.data['expires_at']>utcnow()):deliver(job)
+                if job.data.get('sensitive'):job.data={k:v for k,v in job.data.items() if k!='message'}
+            elif job.kind=='report_tracking_email':
+                from .mail import deliver
+                recipient=db.get(User,job.data['user_id'])
+                if recipient and recipient.data.get('email_verified_at') and recipient.preferences.get('email') is not False and recipient.preferences.get('digest')!='off':deliver(job)
             elif job.kind=='notification_email':
                 from .mail import deliver
                 notice=db.get(Notification,job.data['notification_id'])

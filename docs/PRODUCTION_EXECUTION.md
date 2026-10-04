@@ -194,3 +194,29 @@ support contact for Web Push; an agreed recipient endpoint/credentials and
 organisation ownership for external authority handoff. Email remains deliberately
 disabled per owner preference. Full standards conformance and dedicated live-like
 PostgreSQL concurrency verification remain separate production validation work.
+
+### 4 October 2026 — Mailjet email verification and tracking
+
+Real accounts use six-digit email OTP after password/register when email delivery
+is configured. Codes expire after ten minutes, are session-bound, hashed with
+Argon2, single-use, allow five failed attempts and have a one-minute resend limit.
+Set EMAIL_OTP_REQUIRED=true after sender setup to prevent falling back to password
+login if email credentials are removed. Sensitive code email jobs are scrubbed
+on completion; expired/superseded codes are not delivered. Successful verified
+sign-in queues a security alert. The original sign-in design remains.
+
+Verified reporters receive a report receipt and case-transition checkpoint
+emails with water-body, case ID, dated checkpoint, recorded detail and a public
+tracking link. This does not require following the whole lake; dedup keys prevent
+replay duplication and reporter updates respect disabled email preferences.
+Email formatting is branded and escaped. No diagnoses or water-safety claims.
+
+Sender: Mailjet HTTPS API only for this deployment. Configure MAILJET_API_KEY,
+MAILJET_SECRET_KEY, EMAIL_FROM and EMAIL_OTP_REQUIRED=true after sender validation.
+Gmail OAuth work was removed at the owner's request. Gmail free-mail senders may
+require provider activation; actual inbox acceptance remains a deployment check.
+
+Validation: production build and 23 frontend unit tests passed; backend full suite
+122 passed, 2 dedicated PostgreSQL tests skipped before final required-OTP guard.
+Targeted OTP/mail checks rerun afterward. Browser OTP step/error/resend/success
+checked with mocked provider responses; no live email or test report sent.

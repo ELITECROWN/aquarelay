@@ -11,7 +11,7 @@ def configured():
 def deliver(job):
     if not configured():
         raise ValueError('Transactional email is not configured')
-    html = '<p>'+escape(job.data['message'])+'</p><p><a href="'+escape(job.data['link'],quote=True)+'">Open AquaRelay</a></p><p>If you did not request this message, ignore it.</p>'
+    html = '<div style="background:#f5f5f2;padding:24px;font-family:Arial,sans-serif;color:#24392f"><div style="max-width:560px;margin:auto;background:white;border:1px solid #ddd;border-radius:12px;padding:28px"><h2 style="color:#24392f">AquaRelay<span style="color:#d97706">.</span></h2><h3>'+escape(job.data['subject'])+'</h3><p style="line-height:1.7">'+escape(job.data['message']).replace('\n','<br>')+'</p><p><a style="display:inline-block;background:#f59e0b;color:#1f2937;padding:12px 20px;border-radius:8px;text-decoration:none" href="'+escape(job.data['link'],quote=True)+'">Open AquaRelay</a></p><p style="font-size:12px;color:#667085">Never share your verification code. Manage report-update emails in AquaRelay Settings.</p></div></div>'
     with httpx.Client(timeout=15) as client:
         if os.getenv('RESEND_API_KEY'):
             response=client.post('https://api.resend.com/emails',headers={'Authorization':'Bearer '+os.environ['RESEND_API_KEY'],'Idempotency-Key':job.id},json={'from':os.environ['EMAIL_FROM'],'to':[job.data['to']],'subject':job.data['subject'],'html':html})

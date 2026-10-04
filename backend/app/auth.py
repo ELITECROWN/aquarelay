@@ -36,6 +36,31 @@ def clean_username(value):
 def token_hash(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
+def otp_enabled(user):
+    from .mail import configured
+    return (configured() or os.getenv('EMAIL_OTP_REQUIRED','false').lower()=='true') and not user.email.lower().endswith('@demo.aquarelay.local')
+
+def queue_login_otp(db,user,request):
+    from .mail import configured
+    if not configured():raise HTTPException(503,'Email verification delivery is unavailable. Please try again later.')
+    row=session_record(request,db)
+    if not row:raise HTTPException(403,'Refresh the sign-in page before requesting a code.')
+    old=user.data.get('login_otp',{})
+    if old.get('requested_at','')>(datetime.now(timezone.utc)-timedelta(seconds=60)).isoformat():
+        raise HTTPException(429,'Wait one minute before requesting another code.')
+    code=f'{secrets.randbelow(1000000):06d}'
+    expires=(datetime.now(timezone.utc)+timedelta(minutes=10)).isoformat()
+    job_id=uid('job')
+    user.data={**user.data,'login_otp':{'hash':hasher.hash(code),'session_id':row.id,'attempts':0,'expires_at':expires,'requested_at':utcnow(),'job_id':job_id}}
+    db.add(Job(id=job_id,kind='email',dedup_key='otp:'+secrets.token_hex(24),data={'to':user.email,'subject':'Your AquaRelay verification code','message':f'Your verification code is {code}. It expires in 10 minutes. Do not share this code.','link':os.environ['PUBLIC_URL'].rstrip('/')+'/login','expires_at':expires,'sensitive':True,'user_id':user.id}))
+    db.commit()
+    return {'otp_required':True,'email':user.email,'message':'A verification code has been queued for your email.','csrf_token':row.csrf_token}
+
+def queue_signin_alert(db,user):
+    from .mail import configured
+    if configured() and user.data.get('email_verified_at'):
+        db.add(Job(id=uid('job'),kind='email',dedup_key='signin:'+secrets.token_hex(24),data={'to':user.email,'subject':'New sign-in to AquaRelay','message':f'A successful sign-in to your AquaRelay account was recorded at {utcnow()}. If this was not you, reset your password.','link':os.environ['PUBLIC_URL'].rstrip('/')+'/account/recovery'}))
+
 def session_record(request, db):
     token = request.cookies.get(COOKIE)
     if not token:
@@ -117,6 +142,7 @@ def login(body: Credentials, request: Request, response: Response, db: Session =
         valid = False
     if not valid:
         raise HTTPException(401, "Email or password is incorrect.")
+    if otp_enabled(user):return queue_login_otp(db,user,request)
     previous = session_record(request, db)
     if previous:
         db.delete(previous)
@@ -162,6 +188,7 @@ def register(body: Registration, request: Request, response: Response, db: Sessi
     try:db.flush()
     except IntegrityError:
         db.rollback();raise HTTPException(409,'An account already uses this email address.')
+    if otp_enabled(user):return queue_login_otp(db,user,request)
     previous = session_record(request, db)
     if previous:
         db.delete(previous)
@@ -172,6 +199,43 @@ class ProfileUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     username: str = Field(min_length=3, max_length=40)
     age: int | None = Field(default=None, ge=1, le=130)
+
+class LoginCode(BaseModel):
+    email:str=Field(min_length=5,max_length=254)
+    code:str=Field(pattern=r'^\d{6}$')
+
+@router.post('/auth/verify-login-code')
+def verify_login_code(body:LoginCode,request:Request,response:Response,db:Session=Depends(get_db)):
+    validate_csrf(request,db)
+    user=db.scalar(select(User).where(User.email==body.email.strip().lower()).with_for_update())
+    row=session_record(request,db)
+    record=user.data.get('login_otp',{}) if account_available(user) else {}
+    if not record or record.get('session_id')!=row.id or record.get('expires_at','')<utcnow() or record.get('attempts',0)>=5:
+        raise HTTPException(422,'The code is expired or unavailable. Request a new code from sign-in.')
+    try:valid=hasher.verify(record['hash'],body.code)
+    except (VerifyMismatchError,InvalidHashError):valid=False
+    if not valid:
+        user.data={**user.data,'login_otp':{**record,'attempts':record.get('attempts',0)+1}};db.commit()
+        raise HTTPException(422,'Incorrect verification code. Please check your email.')
+    user.data={**{k:v for k,v in user.data.items() if k!='login_otp'},'email_verified_at':utcnow()}
+    if 'email' not in user.preferences:user.preferences={**user.preferences,'email':True}
+    queue_signin_alert(db,user)
+    db.delete(row)
+    signed=new_session(db,response,user.id)
+    return {'user':public_user(user,signed.csrf_token),'csrf_token':signed.csrf_token}
+
+class ResendCode(BaseModel):
+    email:str=Field(min_length=5,max_length=254)
+
+@router.post('/auth/resend-login-code')
+def resend_login_code(body:ResendCode,request:Request,db:Session=Depends(get_db)):
+    validate_csrf(request,db)
+    user=db.scalar(select(User).where(User.email==body.email.strip().lower()).with_for_update())
+    row=session_record(request,db)
+    if not account_available(user) or user.data.get('login_otp',{}).get('session_id')!=row.id:
+        raise HTTPException(422,'Start again with your email and password.')
+    if not otp_enabled(user):raise HTTPException(503,'Email delivery is unavailable.')
+    return queue_login_otp(db,user,request)
 
 @router.put("/auth/profile")
 def update_profile(body: ProfileUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_user)):

@@ -1895,6 +1895,8 @@ export function OrganisationsPage() {
   );
 }
 export function LoginPage() {
+  const [otpEmail,setOtpEmail]=useState('');
+  const [otpMessage,setOtpMessage]=useState('');
   const config = useConfig();
   const [register, setRegister] = useState(false),
     [error, setError] = useState(""),
@@ -1968,6 +1970,15 @@ export function LoginPage() {
               Sign out / Switch account
             </button>
           </div>
+        ) : otpEmail ? (
+          <form className="form-stack" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const f=new FormData(e.currentTarget);const data=await api<{user:User;csrf_token:string}>('/auth/verify-login-code',{method:'POST',body:JSON.stringify({email:otpEmail,code:f.get('code')})});setCsrf(data.csrf_token);setUser({...data.user,csrf_token:data.csrf_token});await refresh();navigate('/explore');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
+            <p>A six-digit verification code has been queued for <strong>{otpEmail}</strong>. Check your inbox and spam folder. It expires in 10 minutes.</p>
+            <label>Email verification code<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required autoFocus/></label>
+            {error&&<p role="alert" className="error">{error}</p>}{otpMessage&&<p role="status">{otpMessage}</p>}
+            <button className="button primary" disabled={busy}>{busy?'Verifying…':'Verify and sign in'}</button>
+            <button type="button" className="text-button" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{await api('/auth/resend-login-code',{method:'POST',body:JSON.stringify({email:otpEmail})});setOtpMessage('A new code has been queued. Use the latest email.');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>Resend code</button>
+            <button type="button" className="text-button" disabled={busy} onClick={()=>{setOtpEmail('');setError('');setOtpMessage('');}}>Back to sign in</button>
+          </form>
         ) : (
           <form
             className="form-stack"
@@ -1989,11 +2000,12 @@ export function LoginPage() {
                   const rawAge = f.get("age");
                   payload.age = rawAge ? Number(rawAge) : undefined;
                 }
-                const data = await api<{ user: User; csrf_token: string }>(endpoint, {
+                const data = await api<{ user?: User; csrf_token: string; otp_required?:boolean; email?:string }>(endpoint, {
                   method: "POST",
                   body: JSON.stringify(payload),
                 });
                 if (data?.csrf_token) setCsrf(data.csrf_token);
+                if(data.otp_required){setOtpEmail(data.email||String(payload.email));setOtpMessage('');return;}
                 if (data?.user) {
                   setUser({ ...data.user, csrf_token: data.csrf_token });
                 }
