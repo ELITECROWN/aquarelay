@@ -112,7 +112,6 @@ export default function ReportPage() {
   const [media, setMedia] = useState<File[]>([]),
     [drafts, setDrafts] = useState<LocalDraft[]>([]),
     [current, setCurrent] = useState<LocalDraft>();
-  const [externalConsent,setExternalConsent]=useState(false);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
@@ -607,13 +606,12 @@ export default function ReportPage() {
                 </div>
                 <button type="button" className="wf-button secondary" disabled={busy || values.description.length < 8 || !navigator.onLine} onClick={async()=>{
                   setBusy(true);setError('');try {
-                    const result=await api<{draft:Record<string,string>;issues:string[]}>('/api/v1/assistance/report-draft',{method:'POST',body:JSON.stringify({original_text:values.description,language:values.language,external_ai_consent:externalConsent})});
+                    const result=await api<{draft:Record<string,string>;issues:string[]}>('/api/v1/assistance/report-draft',{method:'POST',body:JSON.stringify({original_text:values.description,language:values.language,external_ai_consent:false})});
                     setValues(previous=>({...previous,observation_type:result.draft.observation_type||previous.observation_type,count_estimate:result.draft.count_estimate||previous.count_estimate}));
                     setMessage('Draft suggestions applied for your review. '+(result.draft.additional_observations?'Also mentioned: '+result.draft.additional_observations+'. ':'')+result.issues.join(' '));
                   } catch(e){setError(errorText(e));}finally{setBusy(false);}
                 }}>Suggest structured fields from my statement</button>
                 <p className="wf-muted">Local vocabulary assistance for English, Hindi and Kannada. Review the observation and count before confirming. Your original text stays unchanged.</p>
-                <label className="wf-field"><span><input type="checkbox" checked={externalConsent} onChange={e=>setExternalConsent(e.target.checked)}/> Allow my statement to be sent to Google Gemini if configured. Google's free tier may use submitted data to improve products. Photos and account details are excluded.</span></label>
               </>
             )}
             {step === 2 && (
@@ -764,6 +762,7 @@ export default function ReportPage() {
             {step === 3 && (
               <>
                 <h2>Review your contribution</h2>
+                <p className="wf-muted">By submitting, you confirm this report reflects what you observed and agree to share the report and public evidence on AquaRelay for review and follow-up.</p>
                 <Pill tone="amber">Community report — not yet reviewed</Pill>
                 <dl className="wf-review">
                   <dt>Water body</dt>
