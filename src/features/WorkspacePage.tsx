@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import AdminPage from './AdminPage';
 import {
   ArrowRight,
   ClipboardList,
@@ -40,8 +41,9 @@ export default function WorkspacePage() {
       created_at: string;
       private: boolean;
     }[];
-  }>("/api/v1/workspace", manager);
+  }>("/api/v1/workspace", manager && user?.role !== 'admin');
   if (loading) return <Loading />;
+  if (user?.role === 'admin') return <AdminPage/>;
   if (!manager)
     return (
       <div className="wf-page">

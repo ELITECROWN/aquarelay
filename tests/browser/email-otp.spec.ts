@@ -23,7 +23,7 @@ test('only owner email switches to passwordless admin sign-in',async({page})=>{
  await page.getByRole('button',{name:'Send verification code'}).click();
  await page.getByLabel('Email verification code').fill('123456');
  await page.getByRole('button',{name:'Verify and sign in'}).click();
- await expect(page).toHaveURL(/explore/);expect(requests).toBe(1);
+ await expect(page).toHaveURL(/\/admin$/);expect(requests).toBe(1);
 });
 test('email code step supports retry, resend and completed sign-in',async({page})=>{
  let verified=false;
@@ -36,4 +36,28 @@ test('email code step supports retry, resend and completed sign-in',async({page}
  await page.goto('/login');await page.getByLabel('Email',{exact:true}).fill('qa@example.org');await page.getByLabel('Password',{exact:true}).fill('QaPassword123!');await page.getByRole('button',{name:'Sign in',exact:true}).click();
  const code=page.getByLabel('Email verification code');await expect(code).toBeVisible();await code.fill('000000');await page.getByRole('button',{name:'Verify and sign in'}).click();await expect(page.getByRole('alert')).toHaveText('Incorrect verification code.');
  await page.getByRole('button',{name:'Resend code'}).click();await expect(page.getByText('A new code has been queued. Use the latest email.')).toBeVisible();await code.fill('123456');await page.getByRole('button',{name:'Verify and sign in'}).click();await expect(page).toHaveURL(/explore/);
+});
+test('cleanup sign-in switches an existing citizen session to admin OTP and records',async({page})=>{
+ let verified=false;
+ const citizen={id:'citizen',name:'Citizen',email:'citizen@example.org',role:'citizen'};
+ const owner={id:'owner',name:'Owner',email:'dibyendukoley50@gmail.com',role:'admin'};
+ await page.route('**/api/v1/auth/session',r=>r.fulfill({json:{user:verified?owner:citizen,csrf_token:'test'}}));
+ await page.route('**/api/v1/auth/admin-email-code',r=>r.fulfill({json:{email:owner.email,otp_required:true,csrf_token:'test'}}));
+ await page.route('**/api/v1/auth/verify-login-code',r=>{verified=true;return r.fulfill({json:{user:owner,csrf_token:'test'}});});
+ await page.route('**/api/v1/admin/records/summary',r=>r.fulfill({json:{counts:{accounts:2,reports:1,waterbodies:7}}}));
+ await page.route('**/api/v1/admin/records?*',r=>r.fulfill({json:{items:[{id:'report-test',name:'Demo lake',detail:'Saved observation',status:'new',created_at:'2026-10-05T00:00:00Z',case_id:'case-test'}],total:1,page_size:25}}));
+ await page.goto('/admin/cleanup');
+ await page.getByRole('link',{name:'Sign in as administrator'}).click();
+ await expect(page.getByRole('heading',{name:'Administrator sign-in',exact:true})).toBeVisible();
+ await expect(page.getByLabel('Password',{exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Explore waters'})).toHaveCount(0);
+ await page.getByRole('button',{name:'Send verification code'}).click();
+ await page.getByLabel('Email verification code').fill('123456');
+ await page.getByRole('button',{name:'Verify and sign in'}).click();
+ await expect(page).toHaveURL(/\/admin$/);
+ await expect(page.getByRole('heading',{name:'Database & records'})).toBeVisible();
+ await expect(page.getByText('Saved observation')).toBeVisible();
+ await expect(page.getByRole('link',{name:'Prototype data cleanup'})).toBeVisible();
+ await page.goto('/workspace');
+ await expect(page.getByRole('heading',{name:'Database & records'})).toBeVisible();
 });

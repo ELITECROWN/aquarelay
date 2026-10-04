@@ -57,6 +57,16 @@ def test_owner_receives_admin_access_only_after_otp(client,monkeypatch):
     assert verified.status_code==200,verified.text
     assert verified.json()['user']['role']=='admin'
     assert client.get('/api/v1/admin/cleanup/storage-status').status_code==200
+    counts=client.get('/api/v1/admin/records/summary')
+    assert counts.status_code==200,counts.text
+    assert counts.json()['counts']['accounts']>=1
+    assert 'no-store' in counts.headers['cache-control']
+    for kind in ['accounts','reports','incidents','waterbodies','uploads']:
+        result=client.get('/api/v1/admin/records',params={'kind':kind,'page_size':1})
+        assert result.status_code==200,result.text
+        assert len(result.json()['items'])<=1
+        for record in result.json()['items']:
+            assert not {'password_hash','csrf_token','token_hash','original_path','public_path','data'} & set(record)
 
 def test_owner_passwordless_code_and_other_email_denial(client,monkeypatch):
     setup_sender(monkeypatch);monkeypatch.setenv('DEMO_MODE','false')
@@ -87,6 +97,20 @@ def test_owner_passwordless_fails_closed_without_sender(client,monkeypatch):
     result=client.post('/api/v1/auth/admin-email-code',json={'email':'dibyendukoley50@gmail.com'},headers=headers)
     assert result.status_code==503
     assert client.get('/api/v1/auth/session').json()['user'] is None
+
+def test_admin_record_inspection_denies_other_accounts(client,monkeypatch):
+    assert client.get('/api/v1/admin/records').status_code==401
+    setup_sender(monkeypatch);code,headers=register_code(client)
+    assert client.post('/api/v1/auth/verify-login-code',json={'email':'real@example.org','code':code},headers=headers).status_code==200
+    assert client.get('/api/v1/admin/records').status_code==403
+    from app.db import SessionLocal
+    from app.models import User
+    with SessionLocal() as db:
+        user=db.scalar(select(User).where(User.email=='real@example.org'))
+        user.role='admin';db.commit()
+    monkeypatch.setenv('DEMO_MODE','false')
+    assert client.get('/api/v1/admin/records/summary').status_code==403
+    assert client.get('/api/v1/admin/records').status_code==403
 
 def test_required_otp_does_not_fall_back_when_sender_is_unavailable(client,monkeypatch):
     monkeypatch.setenv('EMAIL_OTP_REQUIRED','true')

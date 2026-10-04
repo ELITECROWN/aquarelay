@@ -32,6 +32,7 @@ const MENU_OPTIONS = [
   { to: "/notifications", title: "Updates & Alerts", icon: Bell },
   { to: "/workspace", title: "Case Workspace", icon: Building2 },
   { to: "/registry", title: "Registry & Field Records", icon: Building2 },
+  { to: "/admin", title: "Admin · Database & Records", icon: Building2 },
   { to: "/organisations", title: "Organisations", icon: Leaf },
 ];
 
@@ -152,7 +153,7 @@ export default function SideMenuDrawer(props?: {
 
         {/* Navigation List: High-contrast Yellow Theme */}
         <nav className="pureflow-drawer-nav" aria-label="Main navigation">
-          {MENU_OPTIONS.filter(item=>!["/integrations","/workspace","/registry"].includes(item.to)||user?.role==="admin"||!!user?.organisation_id).map((item) => {
+          {MENU_OPTIONS.filter(item=>item.to==='/admin'?user?.role==='admin':!["/integrations","/workspace","/registry"].includes(item.to)||user?.role==="admin"||!!user?.organisation_id).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.to;
             return (

@@ -1897,7 +1897,9 @@ export function OrganisationsPage() {
   );
 }
 export function LoginPage() {
-  const [signInEmail,setSignInEmail]=useState('');
+  const [loginParams]=useSearchParams();
+  const adminIntent=loginParams.get('admin')==='1';
+  const [signInEmail,setSignInEmail]=useState(adminIntent?'dibyendukoley50@gmail.com':'');
   const [otpEmail,setOtpEmail]=useState('');
   const [otpMessage,setOtpMessage]=useState('');
   const config = useConfig();
@@ -1940,21 +1942,22 @@ export function LoginPage() {
         </span>
         <p className="eyebrow">YOUR RECORDS, CONNECTED</p>
         <h1>
-          {user
+          {user && !adminIntent
             ? "You’re signed in."
+            : adminIntent ? 'Administrator sign-in'
             : register
               ? "Join AquaRelay."
               : "Welcome to AquaRelay."}
         </h1>
         <p>
-          {user
+          {user && !adminIntent
             ? `Signed in as ${user.name} (@${user.username || (user.email ? user.email.split("@")[0] : "user")})`
             : "Explore publicly. Sign in to contribute, follow places, or work with your organisation."}
         </p>
-        {user ? (
+        {user && !adminIntent ? (
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px", justifyContent: "center" }}>
-            <Link className="button primary" to="/explore">
-              Explore waters <ArrowRight size={17} />
+            <Link className="button primary" to={user.role==='admin'?'/admin':'/explore'}>
+              {user.role==='admin'?'Database & records':'Explore waters'} <ArrowRight size={17} />
             </Link>
             <Link className="button secondary" to="/settings">
               Edit Profile & Settings
@@ -1975,7 +1978,7 @@ export function LoginPage() {
             </button>
           </div>
         ) : otpEmail ? (
-          <form key="otp" className="form-stack" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const f=new FormData(e.currentTarget);const data=await api<{user:User;csrf_token:string}>('/auth/verify-login-code',{method:'POST',body:JSON.stringify({email:otpEmail,code:f.get('code')})});setCsrf(data.csrf_token);setUser({...data.user,csrf_token:data.csrf_token});await refresh();navigate('/explore');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
+          <form key="otp" className="form-stack" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const f=new FormData(e.currentTarget);const data=await api<{user:User;csrf_token:string}>('/auth/verify-login-code',{method:'POST',body:JSON.stringify({email:otpEmail,code:f.get('code')})});setCsrf(data.csrf_token);setUser({...data.user,csrf_token:data.csrf_token});await refresh();navigate(data.user.role==='admin'?'/admin':'/explore');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
             <p>A six-digit verification code has been queued for <strong>{otpEmail}</strong>. Check your inbox and spam folder. It expires in 10 minutes.</p>
             <label>Email verification code<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required autoFocus/></label>
             {error&&<p role="alert" className="error">{error}</p>}{otpMessage&&<p role="status">{otpMessage}</p>}

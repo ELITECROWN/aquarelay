@@ -29,6 +29,7 @@ import ReportPage from "./features/ReportPage";
 import IncidentPage from "./features/IncidentPage";
 import WorkspacePage from "./features/WorkspacePage";
 import CleanupPage from './features/CleanupPage';
+import AdminPage from './features/AdminPage';
 import RegistryWorkspace from "./features/RegistryWorkspace";
 import AccountRecovery from './features/AccountRecovery';
 import ImportPage from "./features/ImportPage";
@@ -200,6 +201,7 @@ export default function App() {
             <Route path="/incidents/:id" element={<IncidentPage />} />
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route path="/admin/cleanup" element={<CleanupPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="/registry" element={<RegistryWorkspace />} />
             <Route path="/account/recovery" element={<AccountRecovery />} />
             <Route path="/account/verify" element={<AccountRecovery />} />

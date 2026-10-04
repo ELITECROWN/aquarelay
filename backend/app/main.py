@@ -70,6 +70,8 @@ app.include_router(assistance_router,prefix="/api/v1",tags=["non-authoritative d
 app.include_router(workspace_router,prefix="/api/v1",tags=["professional contributions"])
 app.include_router(push_router,prefix='/api/v1',tags=['browser notifications'])
 app.include_router(cleanup_router,prefix='/api/v1',tags=['administrator cleanup'])
+from .admin_records import router as admin_records_router
+app.include_router(admin_records_router,prefix='/api/v1',tags=['administrator records'])
 try:
     from .integrations import router as integrations_router
     app.include_router(integrations_router,prefix="/api/v1",tags=["interoperability"])

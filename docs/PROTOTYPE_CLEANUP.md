@@ -25,6 +25,9 @@ Production administration is reserved for `dibyendukoley50@gmail.com`.
 Enter that address on the sign-in page, click **Send verification code** and
 complete the email OTP verification. No password or separate registration is
 required for the owner. Other users retain password sign-in and registration.
+If another account is already signed in, open `/login?admin=1` to verify the
+owner account. Successful administrator verification opens `/admin`, which
+contains searchable, paginated saved records and a link to the cleanup tool.
 Only successful verification grants the owner the administrator role. Other
 accounts are denied by every platform administration endpoint, even if an older
 database entry gives them an administrator role. Local demonstration mode keeps
