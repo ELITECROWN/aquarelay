@@ -13,7 +13,7 @@ import {
   Plus,
   Bell,
 } from "lucide-react";
-import { api } from "./api";
+import { api, backendRecovering } from "./api";
 import { useSession } from "./session";
 import {
   ExplorePage,
@@ -35,7 +35,7 @@ import AccountRecovery from './features/AccountRecovery';
 import ImportPage from "./features/ImportPage";
 import IntegrationsPage from "./features/IntegrationsPage";
 import DispatchDetailsPage from "./features/DispatchDetailsPage";
-import ThreeDWaterScene from "./components/ThreeDWaterScene";
+const ThreeDWaterScene = React.lazy(() => import('./components/ThreeDWaterScene'));
 import WaterSlideTrail from "./components/WaterSlideTrail";
 import SideMenuDrawer from "./components/SideMenuDrawer";
 import Error404Page from "./components/Error404Page";
@@ -79,8 +79,15 @@ const bottomNav = [
   { to: "/report", label: "Report", icon: Plus },
   { to: "/notifications", label: "Updates", icon: Bell },
 ];
+class DecorationBoundary extends Component<{children:ReactNode},{failed:boolean}> {
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  render(){return this.state.failed?null:this.props.children;}
+}
 
 export default function App() {
+  const [recovering,setRecovering]=useState(backendRecovering);
+  useEffect(()=>{const update=()=>setRecovering(backendRecovering());window.addEventListener('aquarelay-connection-change',update);return()=>window.removeEventListener('aquarelay-connection-change',update);},[]);
   const { user } = useSession();
   const location = useLocation(),
     client = useQueryClient();
@@ -180,11 +187,12 @@ export default function App() {
   return (
     <div className="pureflow-app-root">
       <BefreakyPreloader />
-      <ThreeDWaterScene active={isHome} />
+      {isHome && isOnline && !window.matchMedia('(max-width: 767px), (pointer: coarse), (prefers-reduced-motion: reduce)').matches && <DecorationBoundary><React.Suspense fallback={null}><ThreeDWaterScene active /></React.Suspense></DecorationBoundary>}
       <WaterSlideTrail />
       <SideMenuDrawer />
       <PureFlowNavbar />
       {!isOnline && <div className="section-note" role="status">Offline — you can save report drafts on this device. Server records and submissions require a connection.</div>}
+      {isOnline && recovering && <div className="section-note" role="status">Connecting to AquaRelay. The server is starting or reconnecting; records will load automatically. This can take about a minute.</div>}
       {config.data?.demo_mode && <div className="section-note" role="status">Demonstration environment — fictional water bodies and records are labelled synthetic.</div>}
 
       <ErrorBoundary>

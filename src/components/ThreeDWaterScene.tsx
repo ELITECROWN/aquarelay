@@ -15,6 +15,7 @@ export default function ThreeDWaterScene({
     const container = mountRef.current;
     if (!container) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia('(max-width: 767px), (pointer: coarse)').matches) return;
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();

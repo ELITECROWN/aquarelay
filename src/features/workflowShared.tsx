@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { AlertCircle, LoaderCircle, LockKeyhole } from "lucide-react";
-import { api } from "../api";
+import { api, retryReadQuery } from "../api";
 import { useSession } from "../session";
 import "./workflows.css";
 
@@ -27,7 +27,7 @@ export function useRecord<T>(path: string, enabled = true) {
     queryKey: [path, user?.id || "public"],
     queryFn: () => api<T>(path),
     enabled,
-    retry: 1,
+    retry: retryReadQuery,
   });
   return {
     data: query.data,

@@ -23,6 +23,7 @@ function getStoredUser(): User | null {
 }
 
 interface SessionContextType {
+  error: string;
   user: User | null;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -31,6 +32,7 @@ interface SessionContextType {
 }
 
 const SessionContext = createContext<SessionContextType>({
+  error: '',
   user: null,
   loading: true,
   refresh: async () => {},
@@ -44,6 +46,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pendingSession = useRef<Promise<{user: User | null; csrf_token: string}> | null>(null);
   const [user, setUserState] = useState<User | null>(getStoredUser);
   const [loading, setLoading] = useState(true);
+  const [error,setError]=useState('');
 
   function updateUser(next: User | null) {
     if (next) {
@@ -65,6 +68,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
 
   async function refresh() {
+    setLoading(true);setError('');
     try {
       // Concurrent startup effects must share one cookie/CSRF handshake.
       if (!pendingSession.current) pendingSession.current = api<{user: User | null; csrf_token: string}>("/auth/session").finally(() => { pendingSession.current = null; });
@@ -78,6 +82,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         updateUser(null);
       }
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Account connection unavailable. Please retry.');
       console.warn("Session refresh notice:", err);
       // Retain existing session on cold starts/network hiccups
     } finally {
@@ -106,6 +111,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        error,
         refresh,
         setUser: updateUser,
         updateProfile,

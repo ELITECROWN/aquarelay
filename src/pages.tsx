@@ -1907,7 +1907,7 @@ export function LoginPage() {
   const [register, setRegister] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
-  const { user, refresh, setUser } = useSession(),
+  const { user, refresh, setUser, loading:sessionLoading, error:sessionError } = useSession(),
     navigate = useNavigate();
   const adminEmail = signInEmail.trim().toLowerCase() === 'dibyendukoley50@gmail.com';
 
@@ -1955,6 +1955,8 @@ export function LoginPage() {
             ? `Signed in as ${user.name} (@${user.username || (user.email ? user.email.split("@")[0] : "user")})`
             : "Explore publicly. Sign in to contribute, follow places, or work with your organisation."}
         </p>
+        {sessionLoading && <p role="status">Connecting to your account…</p>}
+        {sessionError && <p role="alert">Unable to connect to your account. <button className="text-button" type="button" onClick={()=>{void refresh();}}>Retry connection</button></p>}
         {user && !adminIntent ? (
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px", justifyContent: "center" }}>
             <Link className="button primary" to={user.role==='admin'?'/admin':'/explore'}>
@@ -2080,7 +2082,7 @@ export function LoginPage() {
                 {error}
               </p>
             )}
-            <button className="button primary full" disabled={busy}>
+            <button className="button primary full" disabled={busy || sessionLoading || !!sessionError}>
               {busy ? (adminEmail ? 'Sending code…' : "Signing in…") : adminEmail ? 'Send verification code' : register ? "Create account" : "Sign in"}
               <ArrowRight size={17} />
             </button>

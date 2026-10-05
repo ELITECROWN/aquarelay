@@ -6,25 +6,19 @@ export default function PureFlowHeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Maintain precise 0.00s to 10.00s video loop
-  useEffect(() => {
-    let animId: number;
-    const checkTime = () => {
-      const vid = videoRef.current;
-      if (vid) {
-        // When reaching 10.0 seconds, loop back to 0.0
-        if (vid.currentTime >= 10.0 || vid.currentTime < 0) {
-          vid.currentTime = 0;
-        }
-      }
-      animId = requestAnimationFrame(checkTime);
-    };
-    animId = requestAnimationFrame(checkTime);
-    return () => cancelAnimationFrame(animId);
-  }, []);
+  useEffect(()=>{
+    const video=videoRef.current,hero=heroRef.current;
+    if(!video||!hero||typeof IntersectionObserver==='undefined')return;
+    let visible=true;
+    const update=()=>{if(visible&&!document.hidden)void video.play().catch(()=>{});else video.pause();};
+    const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;update();});
+    observer.observe(hero);document.addEventListener('visibilitychange',update);
+    return()=>{observer.disconnect();document.removeEventListener('visibilitychange',update);};
+  },[videoFailed]);
 
   // Subtle 3D mouse parallax
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if(window.matchMedia('(max-width: 767px), (pointer: coarse), (prefers-reduced-motion: reduce)').matches)return;
     if (!heroRef.current) return;
     const rect = heroRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;

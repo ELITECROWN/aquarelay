@@ -9,6 +9,7 @@ import { OfflineDraftSync } from "./features/offline";
 import "./styles.css";
 import "./lusion-theme.css";
 import "./readability.css";
+import {retryReadQuery} from './api';
 // An open tab can outlive its deployment's hashed lazy-loaded map bundle.
 // Refresh once to obtain the current shell, without a reload loop or losing drafts.
 window.addEventListener('vite:preloadError', event => {
@@ -22,7 +23,7 @@ window.addEventListener('vite:preloadError', event => {
   } catch { /* The error boundary remains available when storage is blocked. */ }
 });
 const client = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
+  defaultOptions: { queries: { retry: retryReadQuery, refetchOnWindowFocus: true } },
 });
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

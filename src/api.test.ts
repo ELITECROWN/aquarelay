@@ -3,6 +3,16 @@ import { api } from "./api";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("authoritative API responses", () => {
+  it('keeps waiting through a 50-second cold start instead of failing after four seconds',async()=>{
+    vi.useFakeTimers();const start=Date.now();
+    const fetcher=vi.fn(async()=>Date.now()-start<50000
+      ? new Response('Server starting',{status:502})
+      : new Response('{"ready":true}',{headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const result=expect(api('/config')).resolves.toEqual({ready:true});
+    await vi.runAllTimersAsync();await result;
+    expect(fetcher).toHaveBeenCalledTimes(6);
+  });
   it("recovers a read when a sleeping server initially returns a proxy error", async () => {
     vi.useFakeTimers();
     const fetcher = vi.fn().mockResolvedValueOnce(new Response('Starting', {status:502})).mockResolvedValueOnce(new Response('{"items":[]}', {headers:{'content-type':'application/json'}}));
