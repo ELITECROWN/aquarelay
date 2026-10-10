@@ -172,9 +172,10 @@ const GALLERY_STREAM_IMAGES = [
 function useRegistry(query = "") {
   return useQuery({
     queryKey: ["waterbodies", query],
-    queryFn: () =>
+    queryFn: ({signal}) =>
       api<{ items: WaterBody[]; total: number }>(
         `/waterbodies${query ? "?" + query : ""}`,
+        {signal},
       ),
   });
 }
@@ -288,12 +289,12 @@ export function ExplorePage() {
   const fullMap = !state && !availability && !from && !to;
   const mapRegistry = useQuery({
     queryKey: ['waterbodies','map',search,type],
-    queryFn: () => api<{items:MapWaterBody[];total:number;truncated:boolean}>(`/waterbodies/map?${new URLSearchParams({q:search,type})}`),
+    queryFn: ({signal}) => api<{items:MapWaterBody[];total:number;truncated:boolean}>(`/waterbodies/map?${new URLSearchParams({q:search,type})}`,{signal}),
     enabled:fullMap && mode==='map',
   });
   const passport = useQuery({
     queryKey: ["passport", selected],
-    queryFn: () => api<Passport>(`/waterbodies/${selected}?include_nearby=false`),
+    queryFn: ({signal}) => api<Passport>(`/waterbodies/${selected}?include_nearby=false`,{signal}),
     enabled: !!selected,
     staleTime: 60000,
   });

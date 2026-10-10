@@ -25,7 +25,7 @@ export function useRecord<T>(path: string, enabled = true) {
   const { user } = useSession();
   const query = useQuery<T>({
     queryKey: [path, user?.id || "public"],
-    queryFn: () => api<T>(path),
+    queryFn: ({signal}) => api<T>(path,{signal}),
     enabled,
     retry: retryReadQuery,
   });

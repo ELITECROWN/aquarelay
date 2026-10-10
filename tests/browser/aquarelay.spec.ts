@@ -609,7 +609,7 @@ test("account switch cannot display prior personal data when next fetch fails", 
   await expect(page).toHaveURL(/explore/);
   await page.route("**/api/v1/following", (route) =>
     route.fulfill({
-      status: 503,
+      status: 500,
       contentType: "application/json",
       body: JSON.stringify({ detail: "Test account request unavailable" }),
     }),

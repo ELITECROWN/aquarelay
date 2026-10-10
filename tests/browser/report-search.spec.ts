@@ -13,9 +13,9 @@ test('report search shows selectable matches and recovers from failed lookup',as
  const heading=await page.getByRole('heading',{name:'Report an observation'}).boundingBox();
  const navigation=await page.locator('.pureflow-capsule-nav').boundingBox();
  expect(heading!.y).toBeGreaterThan(navigation!.y+navigation!.height);
- await expect(page.getByRole('button',{name:'Retry water-body search'})).toBeVisible();
+ await expect(page.getByText(/Connecting to AquaRelay/)).toBeVisible();
  failing=false;
- await page.getByRole('button',{name:'Retry water-body search'}).click();
+ await expect(page.getByText(/Connecting to AquaRelay/)).toHaveCount(0,{timeout:15000});
  await page.getByLabel('Search water bodies by name or place').fill('Willow');
  await page.getByRole('button',{name:/Choose .*Willow/}).click();
  await expect(page.getByLabel('Water body',{exact:true})).not.toHaveValue('');
